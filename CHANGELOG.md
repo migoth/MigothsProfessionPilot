@@ -5,6 +5,12 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.4] - 2026-04-17
+
+### Changed
+- **AH side-tab**: Replaced the small icon button on the AH title bar with a vertical side-tab on the right edge of the AH frame. Shows addon icon and "MPP" label, highlights when the panel is open.
+- Slash commands changed to `/mpp` (removed old `/pp` alias).
+
 ## [0.7.3] - 2026-04-17
 
 ### Fixed
