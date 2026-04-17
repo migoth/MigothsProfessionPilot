@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-04-17
+
+### Fixed
+- AH tab now closes properly when switching to other AH tabs. Added per-tab OnClick hooks alongside PanelTemplates_SetTab hook since the modern AH uses custom click handlers that bypass PanelTemplates.
+- Fishing is now included in profession scanning (previously only prof1, prof2, and cooking were scanned).
+- nil gaps from GetProfessions() are now handled correctly (e.g., character with one primary profession and cooking but no second primary).
+
+### Added
+- **Automatic profession scanning**: MigothsProfessionPilot now silently opens each profession at login to scan recipes and expansion tiers. No need to manually open each profession window. The ProfessionsFrame is suppressed during auto-scan.
+- All professions (including fishing) now show expansion-specific skill tiers after auto-scan.
+- "Calculate Path" button is now functional after auto-scan populates recipe data.
+
 ## [0.3.1] - 2026-04-17
 
 ### Fixed

@@ -78,8 +78,21 @@ function PP.AuctionHouseTab:CreateTab()
     PanelTemplates_TabResize(ahTab, 0)
     PanelTemplates_DeselectTab(ahTab)
 
-    -- Hook PanelTemplates_SetTab so our tab deactivates when any other tab is selected.
-    -- This is more robust than hooking individual tab OnClick handlers.
+    -- Hook each existing AH tab to deactivate ours when clicked.
+    -- The modern AH may use custom OnClick handlers that bypass PanelTemplates_SetTab,
+    -- so direct hooks are required.
+    for i = 1, numTabs do
+        local existingTab = _G["AuctionHouseFrameTab" .. i]
+        if existingTab then
+            existingTab:HookScript("OnClick", function()
+                if isTabActive then
+                    PP.AuctionHouseTab:Deactivate()
+                end
+            end)
+        end
+    end
+
+    -- Also hook PanelTemplates_SetTab as a safety net for programmatic tab changes
     if not self._tabHooked then
         hooksecurefunc("PanelTemplates_SetTab", function(frame, id)
             if frame == AuctionHouseFrame and id ~= ahTabIndex and isTabActive then
