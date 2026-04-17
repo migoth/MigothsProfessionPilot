@@ -1,4 +1,4 @@
-# MigothsProfessionPilot
+# Migoth's Profession Pilot
 
 A World of Warcraft addon that calculates the cheapest and fastest path to max out your professions. Analyzes your current skill levels, known recipes, available materials, and auction house prices to generate an optimal leveling route for every expansion.
 
@@ -56,7 +56,7 @@ A World of Warcraft addon that calculates the cheapest and fastest path to max o
 
 ## How It Works
 
-MigothsProfessionPilot reads your profession data via the TradeSkill API and builds a leveling graph:
+Migoth's Profession Pilot reads your profession data via the TradeSkill API and builds a leveling graph:
 
 1. **Scan** all known and learnable recipes with their skill-up ranges.
 2. **Calculate** the material cost for each recipe using AH prices minus inventory on hand.

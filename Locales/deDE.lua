@@ -5,14 +5,14 @@ local ADDON_NAME, PP = ...
 
 PP:RegisterLocale("deDE", {
     -- General
-    ["ADDON_LOADED"] = "MigothsProfessionPilot v%s geladen. Tippe /pp fuer Hilfe.",
+    ["ADDON_LOADED"] = "Migoth's Profession Pilot v%s geladen. Tippe /pp fuer Hilfe.",
     ["SLASH_HELP"] = "Verfuegbare Befehle:",
     ["SLASH_HELP_TOGGLE"] = "/pp - Hauptfenster umschalten",
     ["SLASH_HELP_SCAN"] = "/pp scan - AH-Preisscan starten",
     ["SLASH_HELP_LIST"] = "/pp list - Einkaufsliste anzeigen",
     ["SLASH_HELP_RESET"] = "/pp reset - Alle gespeicherten Daten zuruecksetzen",
     ["SLASH_HELP_HELP"] = "/pp help - Diese Hilfe anzeigen",
-    ["RESET_CONFIRM"] = "Alle MigothsProfessionPilot-Daten wurden zurueckgesetzt.",
+    ["RESET_CONFIRM"] = "Alle Daten wurden zurueckgesetzt.",
     ["RESET_PROMPT"] = "Tippe '/pp reset confirm' um alle Daten zurueckzusetzen.",
 
     -- Professions
@@ -115,9 +115,9 @@ PP:RegisterLocale("deDE", {
     ["COL_TOTAL"] = "Gesamt",
 
     -- UI
-    ["MAIN_TITLE"] = "MigothsProfessionPilot",
-    ["AH_TAB_TITLE"] = "MigothsProfessionPilot",
-    ["AH_BTN_TOOLTIP"] = "Klicken, um das MigothsProfessionPilot-Panel zu oeffnen",
+    ["MAIN_TITLE"] = "Migoth's Profession Pilot",
+    ["AH_TAB_TITLE"] = "Migoth's Profession Pilot",
+    ["AH_BTN_TOOLTIP"] = "Klicken, um das Migoth's Profession Pilot-Panel zu oeffnen",
     ["TAB_PROFESSIONS"] = "Berufe",
     ["TAB_PATH"] = "Leveling-Pfad",
     ["TAB_SHOPPING"] = "Einkaufsliste",
@@ -128,7 +128,7 @@ PP:RegisterLocale("deDE", {
     ["FILTER_INCOMPLETE"] = "Nur unvollstaendige",
 
     -- Settings
-    ["SETTINGS_TITLE"] = "MigothsProfessionPilot Einstellungen",
+    ["SETTINGS_TITLE"] = "Migoth's Profession Pilot Einstellungen",
     ["SETTINGS_INCLUDE_SELLBACK"] = "Verkaufswert einbeziehen",
     ["SETTINGS_INCLUDE_SELLBACK_DESC"] = "Materialkosten durch geschaetzten AH-Verkaufswert der hergestellten Gegenstaende ausgleichen.",
     ["SETTINGS_USE_INVENTORY"] = "Inventar verwenden",

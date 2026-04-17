@@ -27,7 +27,7 @@ function PP.MinimapButton:Init()
             end
         end,
         OnTooltipShow = function(tooltip)
-            tooltip:AddLine(PP.COLORS.HEADER .. "MigothsProfessionPilot|r")
+            tooltip:AddLine(PP.COLORS.HEADER .. "Migoth's Profession Pilot|r")
             tooltip:AddLine(" ")
 
             -- Show incomplete professions count

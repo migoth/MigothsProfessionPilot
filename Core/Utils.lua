@@ -69,7 +69,7 @@ end
 --- Prints a message with the addon prefix.
 -- @param msg string The message
 function PP.Utils.Print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage(PP.COLORS.HEADER .. "MigothsProfessionPilot|r: " .. msg)
+    DEFAULT_CHAT_FRAME:AddMessage(PP.COLORS.HEADER .. "Migoth's Profession Pilot|r: " .. msg)
 end
 
 --- Deep copies a table.

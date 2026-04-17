@@ -5,15 +5,15 @@ local ADDON_NAME, PP = ...
 local L = PP.L
 
 -- General
-L["ADDON_NAME"] = "MigothsProfessionPilot"
-L["ADDON_LOADED"] = "MigothsProfessionPilot v%s loaded. Type /pp for help."
+L["ADDON_NAME"] = "Migoth's Profession Pilot"
+L["ADDON_LOADED"] = "Migoth's Profession Pilot v%s loaded. Type /pp for help."
 L["SLASH_HELP"] = "Available commands:"
 L["SLASH_HELP_TOGGLE"] = "/pp - Toggle main window"
 L["SLASH_HELP_SCAN"] = "/pp scan - Start AH price scan"
 L["SLASH_HELP_LIST"] = "/pp list - Show shopping list"
 L["SLASH_HELP_RESET"] = "/pp reset - Reset all saved data"
 L["SLASH_HELP_HELP"] = "/pp help - Show this help"
-L["RESET_CONFIRM"] = "All MigothsProfessionPilot data has been reset."
+L["RESET_CONFIRM"] = "All data has been reset."
 L["RESET_PROMPT"] = "Type '/pp reset confirm' to reset all data. This cannot be undone."
 
 -- Professions
@@ -116,9 +116,9 @@ L["COL_PRICE"] = "Price"
 L["COL_TOTAL"] = "Total"
 
 -- UI
-L["MAIN_TITLE"] = "MigothsProfessionPilot"
-L["AH_TAB_TITLE"] = "MigothsProfessionPilot"
-L["AH_BTN_TOOLTIP"] = "Click to open MigothsProfessionPilot panel"
+L["MAIN_TITLE"] = "Migoth's Profession Pilot"
+L["AH_TAB_TITLE"] = "Migoth's Profession Pilot"
+L["AH_BTN_TOOLTIP"] = "Click to open Migoth's Profession Pilot panel"
 L["TAB_PROFESSIONS"] = "Professions"
 L["TAB_PATH"] = "Leveling Path"
 L["TAB_SHOPPING"] = "Shopping List"
@@ -129,7 +129,7 @@ L["BTN_REFRESH"] = "Refresh"
 L["FILTER_INCOMPLETE"] = "Incomplete Only"
 
 -- Settings
-L["SETTINGS_TITLE"] = "MigothsProfessionPilot Settings"
+L["SETTINGS_TITLE"] = "Migoth's Profession Pilot Settings"
 L["SETTINGS_INCLUDE_SELLBACK"] = "Include Sellback"
 L["SETTINGS_INCLUDE_SELLBACK_DESC"] = "Offset material costs by estimated AH sell value of crafted items."
 L["SETTINGS_USE_INVENTORY"] = "Use Inventory"
