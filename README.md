@@ -16,7 +16,9 @@ A World of Warcraft addon that calculates the cheapest and fastest path to max o
 
 ## Installation
 
-1. Download the latest release from the [Releases](../../releases) page.
+[![Download Latest](https://img.shields.io/github/v/release/migoth/MigothsProfessionPilot?label=Download&style=for-the-badge)](https://github.com/migoth/MigothsProfessionPilot/releases/latest/download/MigothsProfessionPilot.zip)
+
+1. Click the button above or download `MigothsProfessionPilot.zip` from the [Releases](../../releases) page.
 2. Extract the `MigothsProfessionPilot` folder into your WoW addons directory:
    - Windows: `World of Warcraft\_retail_\Interface\AddOns\`
    - macOS: `/Applications/World of Warcraft/_retail_/Interface/AddOns/`
