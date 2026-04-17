@@ -5,6 +5,14 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.6] - 2026-04-17
+
+### Fixed
+- **ADDON_ACTION_BLOCKED error**: Removed auto-scan system that called the protected `OpenTradeSkill()` function. Profession data is now loaded when the player manually opens each profession window, and cached in SavedVariables for future sessions.
+
+### Changed
+- **German localization**: Proper umlauts (ä, ö, ü, ß) instead of ASCII substitutions.
+
 ## [0.7.5] - 2026-04-17
 
 ### Changed

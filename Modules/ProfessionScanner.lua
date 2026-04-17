@@ -8,6 +8,10 @@
 --      and expansion tiers WITHOUT requiring the trade skill window.
 --   2) Detailed scan (trade skill window open): reads recipes, reagents,
 --      and difficulty via C_TradeSkillUI when TRADE_SKILL_LIST_UPDATE fires.
+--
+-- Note: Recipe data requires the player to manually open each profession
+-- window at least once per session. The addon caches all data in
+-- SavedVariables so subsequent logins have full data immediately.
 
 local ADDON_NAME, PP = ...
 
@@ -20,14 +24,6 @@ local professionCache = {}
 -- Mapping: Enum.Profession value -> base skill line ID (cache key)
 -- Populated by ScanExpansionTiers so ScanCurrentProfession can find the right entry.
 local enumToSkillLine = {}
-
--- Auto-scan state for proactive profession opening
-local autoScanQueue = {}
-local isAutoScanning = false
-
--- The skill line ID we intentionally opened during auto-scan.
--- Used by ScanCurrentProfession to resolve the correct cache key.
-local expectedSkillLineID = nil
 
 --- Initializes the profession scanner.
 -- Restores cached data from SavedVariables and schedules a proactive scan.
@@ -44,11 +40,6 @@ function PP.ProfessionScanner:Init()
     C_Timer.After(2, function()
         PP.ProfessionScanner:ScanAllProfessions()
     end)
-end
-
---- Returns whether an auto-scan is currently in progress.
-function PP.ProfessionScanner:IsAutoScanning()
-    return isAutoScanning
 end
 
 ------------------------------------------------------------------------
@@ -68,8 +59,9 @@ local function CollectProfessions()
 end
 
 --- Scans all known professions using APIs that work without the
--- trade skill window being open. If no recipe data is cached,
--- triggers an automatic scan by briefly opening each profession.
+-- trade skill window being open. Detects professions and expansion
+-- tiers, relying on cached recipe data from SavedVariables.
+-- Recipe data is populated when the player manually opens each profession window.
 function PP.ProfessionScanner:ScanAllProfessions()
     local professions = CollectProfessions()
 
@@ -80,19 +72,6 @@ function PP.ProfessionScanner:ScanAllProfessions()
 
     -- Persist to SavedVariables
     self:PersistAll()
-
-    -- If any profession lacks recipe data, auto-scan all of them
-    local needsAutoScan = false
-    for _, profData in pairs(professionCache) do
-        if not profData.recipes or not next(profData.recipes) then
-            needsAutoScan = true
-            break
-        end
-    end
-
-    if needsAutoScan then
-        self:AutoScanProfessions()
-    end
 end
 
 --- Scans a single profession using its spellbook tab index.
@@ -303,113 +282,6 @@ function PP.ProfessionScanner:ScanExpansionTiers(profID)
 end
 
 ------------------------------------------------------------------------
--- Auto-scan: silently open each profession to load full data
-------------------------------------------------------------------------
-
---- Queues all professions that lack recipe data for automatic scanning.
-function PP.ProfessionScanner:AutoScanProfessions()
-    local professions = CollectProfessions()
-
-    autoScanQueue = {}
-    for _, profIndex in ipairs(professions) do
-        local _, _, _, _, _, _, skillLineID = GetProfessionInfo(profIndex)
-        if skillLineID then
-            local cache = professionCache[skillLineID]
-            if not cache or not cache.recipes or not next(cache.recipes) then
-                table.insert(autoScanQueue, skillLineID)
-            end
-        end
-    end
-
-    if #autoScanQueue > 0 then
-        isAutoScanning = true
-        self:SetupProfFrameSuppression()
-        self:ProcessAutoScanQueue()
-    end
-end
-
---- Hooks ProfessionsFrame's OnShow to suppress it during auto-scan.
--- The frame is loaded on demand (Blizzard_Professions), so we handle
--- both the case where it already exists and where it hasn't loaded yet.
-function PP.ProfessionScanner:SetupProfFrameSuppression()
-    if self._profFrameHooked then return end
-
-    local function HookFrame()
-        if ProfessionsFrame then
-            ProfessionsFrame:HookScript("OnShow", function(frame)
-                if isAutoScanning then
-                    frame:Hide()
-                end
-            end)
-            self._profFrameHooked = true
-            return true
-        end
-        return false
-    end
-
-    -- Try immediately (frame might already be loaded)
-    if HookFrame() then return end
-
-    -- Watch for the addon to load
-    local watcher = CreateFrame("Frame")
-    watcher:RegisterEvent("ADDON_LOADED")
-    watcher:SetScript("OnEvent", function(_, _, addon)
-        if (addon == "Blizzard_Professions" or addon == "Blizzard_ProfessionsTemplates")
-           and HookFrame() then
-            watcher:UnregisterEvent("ADDON_LOADED")
-        end
-    end)
-end
-
---- Processes the next profession in the auto-scan queue.
-function PP.ProfessionScanner:ProcessAutoScanQueue()
-    if #autoScanQueue == 0 then
-        isAutoScanning = false
-        -- Close any lingering trade skill UI
-        if C_TradeSkillUI and C_TradeSkillUI.CloseTradeSkill then
-            C_TradeSkillUI.CloseTradeSkill()
-        end
-        if ProfessionsFrame and ProfessionsFrame:IsShown() then
-            ProfessionsFrame:Hide()
-        end
-        -- Persist and notify UI
-        self:PersistAll()
-        return
-    end
-
-    local skillLineID = table.remove(autoScanQueue, 1)
-    expectedSkillLineID = skillLineID
-
-    -- Open the profession to trigger data loading.
-    -- TRADE_SKILL_LIST_UPDATE will fire and our existing handler calls
-    -- ScanCurrentProfession(), which caches tiers + recipes.
-    if C_TradeSkillUI and C_TradeSkillUI.OpenTradeSkill then
-        C_TradeSkillUI.OpenTradeSkill(skillLineID)
-    end
-
-    -- Immediately suppress the frame if it appeared
-    C_Timer.After(0, function()
-        if ProfessionsFrame and ProfessionsFrame:IsShown() then
-            ProfessionsFrame:Hide()
-        end
-    end)
-
-    -- Wait for the scan to complete, then close and continue
-    C_Timer.After(1.5, function()
-        expectedSkillLineID = nil
-        if C_TradeSkillUI and C_TradeSkillUI.CloseTradeSkill then
-            C_TradeSkillUI.CloseTradeSkill()
-        end
-        if ProfessionsFrame and ProfessionsFrame:IsShown() then
-            ProfessionsFrame:Hide()
-        end
-        C_Timer.After(0.5, function()
-            PP.ProfessionScanner:ProcessAutoScanQueue()
-        end)
-    end)
-end
-
-------------------------------------------------------------------------
 -- Detailed scan: runs when the trade skill window is open
 ------------------------------------------------------------------------
 
@@ -427,17 +299,12 @@ function PP.ProfessionScanner:ScanCurrentProfession()
     -- strategies, in order of reliability:
     local profID = nil
 
-    -- Strategy 1: During auto-scan we know exactly which skillLineID was opened
-    if expectedSkillLineID and professionCache[expectedSkillLineID] then
-        profID = expectedSkillLineID
-    end
-
-    -- Strategy 2: Use the enum->skillLine mapping from ScanExpansionTiers
-    if not profID and enumToSkillLine[enumID] then
+    -- Strategy 1: Use the enum->skillLine mapping from ScanExpansionTiers
+    if enumToSkillLine[enumID] then
         profID = enumToSkillLine[enumID]
     end
 
-    -- Strategy 3: Exact name match against existing cache entries
+    -- Strategy 2: Exact name match against existing cache entries
     if not profID then
         local profName = profInfo.professionName or ""
         if profName ~= "" then
@@ -450,7 +317,7 @@ function PP.ProfessionScanner:ScanCurrentProfession()
         end
     end
 
-    -- Strategy 4: The enum value itself (unlikely to match a cache key
+    -- Strategy 3: The enum value itself (unlikely to match a cache key
     -- but keeps the old behaviour as last resort)
     if not profID then
         profID = enumID

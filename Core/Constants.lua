@@ -3,7 +3,7 @@
 
 local ADDON_NAME, PP = ...
 
-PP.VERSION = "0.7.5"
+PP.VERSION = "0.7.6"
 
 -- Auction house cut (5%)
 PP.AH_CUT = 0.05
