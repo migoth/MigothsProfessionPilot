@@ -5,6 +5,28 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.1] - 2026-04-17
+
+### Fixed
+- **Single step in leveling path**: The optimizer now always creates separate
+  steps at difficulty transitions (orange->yellow->green). Previously all crafts
+  were merged into one step because the same recipe stayed cheapest at every
+  level. Now you see e.g. "Step 1: 8x Recipe A (orange), Step 2: 11x Recipe A
+  (yellow), Step 3: 24x Recipe B (green)".
+- **Expansion tiers not showing (again)**: Added name-based matching as a third
+  fallback when detecting expansion tiers. If both the skill line ID comparison
+  and Enum.Profession resolution fail, the scanner now compares the child
+  tier's `professionName` against the cached profession name. Also stores the
+  reverse enum mapping when discovered through child tiers.
+- **AH scan never completing**: Replaced the unreliable `ReplicateItems()` full
+  AH scan with targeted per-material commodity searches. The scan now:
+  - Collects all material IDs from scanned recipes
+  - Searches each one individually via `C_AuctionHouse.SendSearchQuery`
+  - Processes `COMMODITY_SEARCH_RESULTS_UPDATED` for each material
+  - Skips non-commodity items after a 2-second timeout
+  - Falls back to `ReplicateItems` only when no recipe data exists
+  - Has proper error handling (pcall) and AH-close detection
+
 ## [0.7.0] - 2026-04-17
 
 ### Changed

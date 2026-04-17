@@ -91,18 +91,14 @@ function PP.PathOptimizer:CalculatePath(profID, categoryID, currentSkill, maxSki
             stepCost = stepCost + bestEntry.materialCost * crafts
             sim = sim + ups
 
-            -- At difficulty transitions, check if a better recipe exists
+            -- Always break at difficulty transitions so each difficulty
+            -- level gets its own step (shows the player when craft counts
+            -- increase due to lower skill-up probability).
             if sim < maxSkill then
                 local newDiff = self:EstimateDifficulty(
                     bestEntry.data.difficulty, sim, scanSkill, diffRange)
                 if newDiff ~= diff then
-                    local newBest = self:FindBestRecipe(
-                        recipes, sim, scanSkill, diffRange)
-                    if newBest
-                       and newBest.data.recipeID ~= bestEntry.data.recipeID
-                    then
-                        break  -- switch to better recipe
-                    end
+                    break  -- new step for the new difficulty level
                 end
             end
         end

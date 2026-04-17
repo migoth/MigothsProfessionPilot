@@ -161,10 +161,22 @@ function PP.ProfessionScanner:ScanExpansionTiers(profID)
     end
 
     -- Helper: does this child belong to our profession?
+    -- Checks three things in order:
+    --   1) parentProfessionID matches the skill line ID directly
+    --   2) parentProfessionID matches the resolved Enum.Profession value
+    --   3) professionName matches our cached profession name (fallback)
+    local profName = cache.name
     local function IsMatch(info)
-        if not info or not info.parentProfessionID then return false end
-        return info.parentProfessionID == profID
-            or (enumID and info.parentProfessionID == enumID)
+        if not info then return false end
+        if info.parentProfessionID then
+            if info.parentProfessionID == profID then return true end
+            if enumID and info.parentProfessionID == enumID then return true end
+        end
+        -- Name-based fallback: compare base profession name
+        if profName and info.professionName and info.professionName == profName then
+            return true
+        end
+        return false
     end
 
     -- Method 1: GetAllProfTradeSkillLines + GetProfessionInfoBySkillLineID
@@ -172,9 +184,18 @@ function PP.ProfessionScanner:ScanExpansionTiers(profID)
         local allLines = C_TradeSkillUI.GetAllProfTradeSkillLines()
         if allLines then
             for _, childLineID in ipairs(allLines) do
-                if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
+                if childLineID ~= profID
+                   and C_TradeSkillUI.GetProfessionInfoBySkillLineID
+                then
                     local info = C_TradeSkillUI.GetProfessionInfoBySkillLineID(childLineID)
                     if IsMatch(info) then
+                        -- Store reverse mapping for any newly discovered enum
+                        if info.parentProfessionID
+                           and info.parentProfessionID ~= profID
+                        then
+                            enumToSkillLine[info.parentProfessionID] = profID
+                            enumID = info.parentProfessionID
+                        end
                         cache.tiers[childLineID] = {
                             categoryID = childLineID,
                             name = info.professionName or info.expansionName or "Unknown",
@@ -413,19 +434,33 @@ function PP.ProfessionScanner:ScanTiersFromOpenWindow(profID)
         end
     end
 
+    local profName = cache.name
     local function IsMatch(info)
-        if not info or not info.parentProfessionID then return false end
-        return info.parentProfessionID == profID
-            or (enumID and info.parentProfessionID == enumID)
+        if not info then return false end
+        if info.parentProfessionID then
+            if info.parentProfessionID == profID then return true end
+            if enumID and info.parentProfessionID == enumID then return true end
+        end
+        if profName and info.professionName and info.professionName == profName then
+            return true
+        end
+        return false
     end
 
     if C_TradeSkillUI.GetAllProfTradeSkillLines then
         local allLines = C_TradeSkillUI.GetAllProfTradeSkillLines()
         if allLines then
             for _, lineID in ipairs(allLines) do
-                if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
+                if lineID ~= profID
+                   and C_TradeSkillUI.GetProfessionInfoBySkillLineID
+                then
                     local info = C_TradeSkillUI.GetProfessionInfoBySkillLineID(lineID)
                     if IsMatch(info) then
+                        if info.parentProfessionID
+                           and info.parentProfessionID ~= profID
+                        then
+                            enumToSkillLine[info.parentProfessionID] = profID
+                        end
                         local existing = cache.tiers[lineID]
                         cache.tiers[lineID] = {
                             categoryID = lineID,
