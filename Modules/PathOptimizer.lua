@@ -56,45 +56,43 @@ function PP.PathOptimizer:CalculatePath(profID, categoryID, currentSkill, maxSki
         if simulatedSkill >= maxSkill then break end
 
         local entry = bestByDifficulty[diff]
-        if not entry then goto continue_diff end
+        if entry then
+            local recipe = entry.recipe
+            local chance = recipe.skillUpChance
+            local pointsPerCraft = recipe.numSkillUps or 1
+            local remainingPoints = maxSkill - simulatedSkill
 
-        local recipe = entry.recipe
-        local chance = recipe.skillUpChance
-        local pointsPerCraft = recipe.numSkillUps or 1
-        local remainingPoints = maxSkill - simulatedSkill
+            -- Calculate crafts needed for the remaining skill points
+            local craftsForOnePoint = self:CraftsForOnePoint(chance)
+            local craftsNeeded = math.ceil(remainingPoints / pointsPerCraft) * craftsForOnePoint
+            local skillGain = remainingPoints
 
-        -- Calculate crafts needed for the remaining skill points
-        local craftsForOnePoint = self:CraftsForOnePoint(chance)
-        local craftsNeeded = math.ceil(remainingPoints / pointsPerCraft) * craftsForOnePoint
-        local skillGain = remainingPoints
+            -- Calculate costs
+            local batchMaterialCost = entry.materialCost * craftsNeeded
+            local batchSellback = includeSellback and (entry.sellback * craftsNeeded) or 0
+            local batchNetCost = batchMaterialCost - batchSellback
+            local costPerPoint = skillGain > 0 and (batchNetCost / skillGain) or 0
 
-        -- Calculate costs
-        local batchMaterialCost = entry.materialCost * craftsNeeded
-        local batchSellback = includeSellback and (entry.sellback * craftsNeeded) or 0
-        local batchNetCost = batchMaterialCost - batchSellback
-        local costPerPoint = skillGain > 0 and (batchNetCost / skillGain) or 0
+            table.insert(path, {
+                recipeID = recipe.recipeID,
+                name = recipe.name,
+                icon = recipe.icon,
+                craftCount = craftsNeeded,
+                materialCost = batchMaterialCost,
+                sellback = batchSellback,
+                netCost = batchNetCost,
+                costPerPoint = costPerPoint,
+                skillFrom = simulatedSkill,
+                skillTo = simulatedSkill + skillGain,
+                difficulty = diff,
+                skillUpChance = chance,
+                reagents = recipe.reagents,
+                outputItemID = recipe.outputItemID,
+            })
 
-        table.insert(path, {
-            recipeID = recipe.recipeID,
-            name = recipe.name,
-            icon = recipe.icon,
-            craftCount = craftsNeeded,
-            materialCost = batchMaterialCost,
-            sellback = batchSellback,
-            netCost = batchNetCost,
-            costPerPoint = costPerPoint,
-            skillFrom = simulatedSkill,
-            skillTo = simulatedSkill + skillGain,
-            difficulty = diff,
-            skillUpChance = chance,
-            reagents = recipe.reagents,
-            outputItemID = recipe.outputItemID,
-        })
-
-        totalCost = totalCost + batchNetCost
-        simulatedSkill = simulatedSkill + skillGain
-
-        ::continue_diff::
+            totalCost = totalCost + batchNetCost
+            simulatedSkill = simulatedSkill + skillGain
+        end
     end
 
     return path, totalCost
