@@ -1,0 +1,40 @@
+## Interface: 120001
+## Title: MigothsProfessionPilot
+## Notes: Calculates the cheapest and fastest path to max out your professions across all expansions.
+## Notes-deDE: Berechnet den guenstigsten und schnellsten Weg, um deine Berufe in allen Erweiterungen zu maximieren.
+## Author: migoth
+## Version: 0.1.0
+## SavedVariables: MigothsProfessionPilotDB
+## SavedVariablesPerCharacter: MigothsProfessionPilotCharDB
+## IconTexture: Interface\Icons\INV_Misc_Book_09
+## Category: Professions
+
+# Libraries
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
+
+# Localization
+Locales\Localization.lua
+Locales\enUS.lua
+Locales\deDE.lua
+
+# Core
+Core\Constants.lua
+Core\Utils.lua
+Core\Database.lua
+Core\Init.lua
+
+# Modules
+Modules\ProfessionScanner.lua
+Modules\InventoryScanner.lua
+Modules\PriceSource.lua
+Modules\PathOptimizer.lua
+
+# UI
+UI\MinimapButton.lua
+UI\MainFrame.lua
+UI\ProfessionList.lua
+UI\LevelingPath.lua
+UI\ShoppingList.lua
