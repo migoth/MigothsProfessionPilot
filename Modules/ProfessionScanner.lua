@@ -17,6 +17,10 @@ PP.ProfessionScanner = {}
 -- Structure: { professionID -> { name, tiers -> { skillLevel, maxSkill, recipes[] } } }
 local professionCache = {}
 
+-- Mapping: Enum.Profession value -> base skill line ID (cache key)
+-- Populated by ScanExpansionTiers so ScanCurrentProfession can find the right entry.
+local enumToSkillLine = {}
+
 -- Auto-scan state for proactive profession opening
 local autoScanQueue = {}
 local isAutoScanning = false
@@ -132,20 +136,45 @@ end
 
 --- Scans expansion-specific skill tiers for a given profession.
 -- Uses C_TradeSkillUI APIs that work outside the trade skill frame.
+--
+-- IMPORTANT: profID is a skill line ID (e.g. 171 for Alchemy) from
+-- GetProfessionInfo(). However, ProfessionInfo.parentProfessionID
+-- returned by GetProfessionInfoBySkillLineID() uses Enum.Profession
+-- values (e.g. 3 for Alchemy). We resolve the enum value first so
+-- the comparison works.
 -- @param profID number The base profession skill line ID
 function PP.ProfessionScanner:ScanExpansionTiers(profID)
     local cache = professionCache[profID]
     if not cache then return end
 
+    -- Resolve the Enum.Profession value for this skill line.
+    local enumID = nil
+    if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
+        local baseInfo = C_TradeSkillUI.GetProfessionInfoBySkillLineID(profID)
+        if baseInfo then
+            enumID = baseInfo.professionID or baseInfo.parentProfessionID
+            -- Store the mapping so ScanCurrentProfession can find the cache key
+            if enumID and enumID ~= profID then
+                enumToSkillLine[enumID] = profID
+            end
+        end
+    end
+
+    -- Helper: does this child belong to our profession?
+    local function IsMatch(info)
+        if not info or not info.parentProfessionID then return false end
+        return info.parentProfessionID == profID
+            or (enumID and info.parentProfessionID == enumID)
+    end
+
     -- Method 1: GetAllProfTradeSkillLines + GetProfessionInfoBySkillLineID
-    -- These APIs were added in 10.0+ and can return per-expansion skill data.
     if C_TradeSkillUI.GetAllProfTradeSkillLines then
         local allLines = C_TradeSkillUI.GetAllProfTradeSkillLines()
         if allLines then
             for _, childLineID in ipairs(allLines) do
                 if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
                     local info = C_TradeSkillUI.GetProfessionInfoBySkillLineID(childLineID)
-                    if info and info.parentProfessionID == profID then
+                    if IsMatch(info) then
                         cache.tiers[childLineID] = {
                             categoryID = childLineID,
                             name = info.professionName or info.expansionName or "Unknown",
@@ -165,7 +194,7 @@ function PP.ProfessionScanner:ScanExpansionTiers(profID)
         local children = C_TradeSkillUI.GetChildProfessionInfos()
         if children then
             for _, childInfo in ipairs(children) do
-                if childInfo.parentProfessionID == profID then
+                if IsMatch(childInfo) then
                     local id = childInfo.professionID or childInfo.skillLineID
                     if id then
                         cache.tiers[id] = {
@@ -180,6 +209,22 @@ function PP.ProfessionScanner:ScanExpansionTiers(profID)
                     end
                 end
             end
+        end
+    end
+
+    -- If real expansion tiers were found, remove the fallback single-tier
+    -- entry (which has key == profID) so it doesn't show alongside the
+    -- real tiers in the UI.
+    if cache.tiers[profID] then
+        local hasRealTiers = false
+        for tierID, _ in pairs(cache.tiers) do
+            if tierID ~= profID then
+                hasRealTiers = true
+                break
+            end
+        end
+        if hasRealTiers then
+            cache.tiers[profID] = nil
         end
     end
 end
@@ -303,6 +348,24 @@ function PP.ProfessionScanner:ScanCurrentProfession()
 
     local profID = profInfo.professionID
 
+    -- GetBaseProfessionInfo().professionID might be an Enum.Profession value
+    -- instead of a skill line ID. If we have a mapping from a previous scan,
+    -- use the skill line ID as cache key for consistency.
+    if enumToSkillLine[profID] then
+        profID = enumToSkillLine[profID]
+    end
+
+    -- If profID still doesn't match an existing cache entry, try to
+    -- find the right one by profession name.
+    if not professionCache[profID] then
+        for existingID, data in pairs(professionCache) do
+            if data.name == (profInfo.professionName or "") then
+                profID = existingID
+                break
+            end
+        end
+    end
+
     if not professionCache[profID] then
         professionCache[profID] = {
             name = profInfo.professionName or "Unknown",
@@ -336,22 +399,33 @@ end
 --- Reads expansion tiers from the currently open trade skill window.
 -- This is a secondary method that uses C_TradeSkillUI.GetProfessionInfo
 -- (the detailed frame variant) to get accurate per-expansion skill levels.
--- @param profID number The base profession ID
+-- @param profID number The base profession ID (skill line ID)
 function PP.ProfessionScanner:ScanTiersFromOpenWindow(profID)
     local cache = professionCache[profID]
     if not cache then return end
 
-    -- C_TradeSkillUI.GetTradeSkillLineForRecipe or tab-level info
-    -- When the window is open, the profession info is available
-    -- through multiple channels. Try the child skill lines API again
-    -- as it may return richer data with the window open.
+    -- Resolve enum ID for matching (same as ScanExpansionTiers)
+    local enumID = nil
+    if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
+        local baseInfo = C_TradeSkillUI.GetProfessionInfoBySkillLineID(profID)
+        if baseInfo then
+            enumID = baseInfo.professionID or baseInfo.parentProfessionID
+        end
+    end
+
+    local function IsMatch(info)
+        if not info or not info.parentProfessionID then return false end
+        return info.parentProfessionID == profID
+            or (enumID and info.parentProfessionID == enumID)
+    end
+
     if C_TradeSkillUI.GetAllProfTradeSkillLines then
         local allLines = C_TradeSkillUI.GetAllProfTradeSkillLines()
         if allLines then
             for _, lineID in ipairs(allLines) do
                 if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
                     local info = C_TradeSkillUI.GetProfessionInfoBySkillLineID(lineID)
-                    if info and info.parentProfessionID == profID then
+                    if IsMatch(info) then
                         local existing = cache.tiers[lineID]
                         cache.tiers[lineID] = {
                             categoryID = lineID,
@@ -364,6 +438,20 @@ function PP.ProfessionScanner:ScanTiersFromOpenWindow(profID)
                     end
                 end
             end
+        end
+    end
+
+    -- Clean up fallback tier if real tiers now exist
+    if cache.tiers[profID] then
+        local hasRealTiers = false
+        for tierID, _ in pairs(cache.tiers) do
+            if tierID ~= profID then
+                hasRealTiers = true
+                break
+            end
+        end
+        if hasRealTiers then
+            cache.tiers[profID] = nil
         end
     end
 end

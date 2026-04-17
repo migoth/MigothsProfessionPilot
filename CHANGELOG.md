@@ -5,6 +5,13 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.2] - 2026-04-17
+
+### Fixed
+- **Expansion tiers not showing**: Fixed a critical bug where only one tier (the current expansion) was displayed for crafting professions. The WoW API returns `parentProfessionID` as an `Enum.Profession` value (e.g. 3 for Alchemy) while MigothsProfessionPilot was comparing against the skill line ID (e.g. 171). These never matched, so child expansion tiers were silently discarded. The scanner now resolves the Enum.Profession value via `GetProfessionInfoBySkillLineID` before comparing, and uses both ID types as fallback.
+- **Cache key mismatch**: `ScanCurrentProfession` (triggered when opening the profession window) could create a duplicate cache entry under a different key than the initial login scan. Now uses an `enumToSkillLine` mapping and name-based fallback to always find the correct entry.
+- **Fallback tier cleanup**: When real expansion tiers are discovered, the single fallback tier entry is now automatically removed so it doesn't show alongside the real tiers.
+
 ## [0.6.1] - 2026-04-17
 
 ### Changed
