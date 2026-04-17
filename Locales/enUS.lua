@@ -76,8 +76,11 @@ L["PATH_GUARANTEED"] = "Guaranteed skill-up"
 L["PATH_CHANCE"] = "~%.0f%% chance per craft"
 L["PATH_CALCULATING"] = "Calculating optimal path..."
 L["PATH_NO_RECIPES"] = "No recipes available for skill-ups at this level."
+L["PATH_NEED_RECIPES"] = "Recipes not yet scanned"
+L["PATH_NO_RECIPES_HINT"] = "All known recipes may be trivial (gray) at this skill level, or no AH price data is available."
 L["PATH_HAVE_MATERIALS"] = "Have materials"
 L["PATH_NEED_MATERIALS"] = "Need to buy"
+L["PROF_HINT_OPEN_TIERS"] = "Open the profession window to see all expansion tiers."
 
 -- Inventory
 L["INV_IN_BAGS"] = "In Bags: %d"

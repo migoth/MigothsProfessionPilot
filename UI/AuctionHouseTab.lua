@@ -10,7 +10,6 @@ local ahTab = nil          -- The tab button on the AH frame
 local ahPanel = nil         -- The embedded content panel
 local ahTabIndex = nil      -- Our tab index
 local isTabActive = false   -- Whether our tab is currently shown
-local defaultFrames = {}    -- Default AH child frames to hide/show
 
 --- Initializes the AH tab. Called once from Init.lua.
 -- The actual event hooks are wired up in Init.lua alongside existing handlers.
@@ -70,12 +69,17 @@ function PP.AuctionHouseTab:CreateTab()
     PanelTemplates_TabResize(ahTab, 0)
     PanelTemplates_SetNumTabs(AuctionHouseFrame, ahTabIndex)
 
-    -- Hook the default tab click to deactivate ours
-    hooksecurefunc("AuctionHouseFrame_SetDisplayMode", function()
-        if isTabActive then
-            PP.AuctionHouseTab:Deactivate()
+    -- Hook each existing AH tab to deactivate ours when a default tab is clicked
+    for i = 1, numTabs do
+        local existingTab = _G["AuctionHouseFrameTab" .. i]
+        if existingTab then
+            existingTab:HookScript("OnClick", function()
+                if isTabActive then
+                    PP.AuctionHouseTab:Deactivate()
+                end
+            end)
         end
-    end)
+    end
 end
 
 --- Creates the embedded panel that replaces the AH content area.
@@ -86,6 +90,8 @@ function PP.AuctionHouseTab:CreatePanel()
     ahPanel:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPLEFT", 0, -58)
     ahPanel:SetPoint("BOTTOMRIGHT", AuctionHouseFrame, "BOTTOMRIGHT", 0, 0)
     ahPanel:SetFrameStrata("HIGH")
+    ahPanel:SetFrameLevel(AuctionHouseFrame:GetFrameLevel() + 100)
+    ahPanel:EnableMouse(true)
     ahPanel:Hide()
 
     -- Background
@@ -295,7 +301,7 @@ function PP.AuctionHouseTab:OnTabClick()
     self:Activate()
 end
 
---- Activates the MigothsProfessionPilot tab: hides default AH content and shows our panel.
+--- Activates the MigothsProfessionPilot tab: shows our panel overlaying the AH content.
 function PP.AuctionHouseTab:Activate()
     if not AuctionHouseFrame or not ahPanel then return end
     isTabActive = true
@@ -303,43 +309,19 @@ function PP.AuctionHouseTab:Activate()
     -- Select our tab visually
     PanelTemplates_SetTab(AuctionHouseFrame, ahTabIndex)
 
-    -- Collect and hide the default AH display frames
-    defaultFrames = {}
-    for _, child in pairs({AuctionHouseFrame:GetChildren()}) do
-        if child ~= ahPanel and child ~= ahTab
-           and child:IsObjectType("Frame")
-           and child:IsShown()
-           and child ~= AuctionHouseFrame.NineSlice
-           and child ~= AuctionHouseFrame.PortraitContainer then
-            local name = child:GetName() or ""
-            if not name:match("^AuctionHouseFrameTab%d+$") then
-                table.insert(defaultFrames, child)
-                child:Hide()
-            end
-        end
-    end
-
-    -- Update scan info and show
+    -- Show our overlay panel (blocks input to AH content behind it)
     self:UpdateScanInfo()
     ahPanel:Show()
     self:SetEmbeddedTab(ahPanel.activeTab or "professions")
 end
 
---- Deactivates our tab: hides our panel and restores default AH content.
+--- Deactivates our tab: hides our panel to reveal default AH content.
 function PP.AuctionHouseTab:Deactivate()
     isTabActive = false
 
     if ahPanel then
         ahPanel:Hide()
     end
-
-    -- Restore previously visible default frames
-    for _, frame in ipairs(defaultFrames) do
-        if frame and not frame:IsShown() then
-            frame:Show()
-        end
-    end
-    defaultFrames = {}
 end
 
 --- Updates the scan timestamp in the embedded header.

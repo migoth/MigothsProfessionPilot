@@ -75,8 +75,11 @@ PP:RegisterLocale("deDE", {
     ["PATH_CHANCE"] = "~%.0f%% Chance pro Herstellung",
     ["PATH_CALCULATING"] = "Berechne optimalen Pfad...",
     ["PATH_NO_RECIPES"] = "Keine Rezepte fuer Fertigkeitspunkte auf dieser Stufe verfuegbar.",
+    ["PATH_NEED_RECIPES"] = "Rezepte noch nicht gescannt",
+    ["PATH_NO_RECIPES_HINT"] = "Alle bekannten Rezepte sind moeglicherweise trivial (grau) auf dieser Stufe, oder es fehlen AH-Preisdaten.",
     ["PATH_HAVE_MATERIALS"] = "Materialien vorhanden",
     ["PATH_NEED_MATERIALS"] = "Muss gekauft werden",
+    ["PROF_HINT_OPEN_TIERS"] = "Oeffne das Berufsfenster, um alle Erweiterungsstufen zu sehen.",
 
     -- Inventory
     ["INV_IN_BAGS"] = "In Taschen: %d",

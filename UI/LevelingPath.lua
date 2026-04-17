@@ -64,9 +64,25 @@ function PP.LevelingPathUI:RefreshPanel(panel)
         panel.skillRangeText:SetText("")
 
         local empty = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        empty:SetPoint("CENTER")
-        empty:SetText(L["PATH_EMPTY"])
+        empty:SetPoint("CENTER", 0, 10)
         empty:SetTextColor(0.5, 0.5, 0.5)
+
+        local hint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        hint:SetPoint("TOP", empty, "BOTTOM", 0, -6)
+        hint:SetTextColor(0.4, 0.4, 0.4)
+
+        if pathData and pathData.noRecipesAvailable then
+            -- Path was calculated but no skillable recipes found
+            local tierName = pathData.tierName or ""
+            panel.headerText:SetText(L["PATH_TITLE"] .. " - " .. tierName)
+            empty:SetText(L["PATH_NO_RECIPES"])
+            hint:SetText(L["PATH_NO_RECIPES_HINT"])
+        else
+            -- No path calculated at all
+            empty:SetText(L["PATH_EMPTY"])
+            hint:SetText("")
+        end
+
         scrollChild:SetHeight(100)
         return
     end

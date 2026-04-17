@@ -96,18 +96,45 @@ function PP.ProfessionListUI:RefreshPanel(panel)
 
         yOffset = yOffset + 30
 
-        -- Expansion tiers
+        -- Show hint if no recipes are cached for this profession
+        local hasRecipes = profData.recipes and next(profData.recipes)
+        if not hasRecipes then
+            local recipeHint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            recipeHint:SetPoint("TOPLEFT", 16, -yOffset)
+            recipeHint:SetText(PP.COLORS.NEUTRAL .. L["PROF_HINT_RECIPES"] .. "|r")
+            yOffset = yOffset + 18
+        end
+
+        -- Check if we only have the fallback single tier (no real expansion data)
         local tierCount = 0
+        local onlyFallback = false
+        for _ in pairs(profData.tiers or {}) do tierCount = tierCount + 1 end
+        if tierCount == 1 then
+            for id, _ in pairs(profData.tiers) do
+                if id == profID then onlyFallback = true end
+            end
+        end
+
+        if onlyFallback then
+            -- Show hint to open profession window for expansion breakdown
+            local hint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            hint:SetPoint("TOPLEFT", 16, -yOffset)
+            hint:SetText(PP.COLORS.GRAY .. L["PROF_HINT_OPEN_TIERS"] .. "|r")
+            yOffset = yOffset + 18
+        end
+
+        -- Expansion tiers
+        local displayedTiers = 0
         for categoryID, tier in pairs(profData.tiers or {}) do
             local isMaxed = tier.skillLevel >= tier.maxSkill
             if not panel.filterIncomplete or not isMaxed then
-                tierCount = tierCount + 1
-                yOffset = self:CreateTierRow(scrollChild, yOffset, profID, categoryID, tier, tierCount)
+                displayedTiers = displayedTiers + 1
+                yOffset = self:CreateTierRow(scrollChild, yOffset, profID, categoryID, tier, displayedTiers, hasRecipes)
             end
         end
 
         -- If no tiers shown for this profession (e.g. all maxed and filtering)
-        if tierCount == 0 and panel.filterIncomplete then
+        if displayedTiers == 0 and panel.filterIncomplete then
             local allMaxed = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             allMaxed:SetPoint("TOPLEFT", 16, -yOffset)
             allMaxed:SetText(PP.COLORS.MAXED .. L["SKILL_MAXED"] .. "|r")
@@ -115,15 +142,6 @@ function PP.ProfessionListUI:RefreshPanel(panel)
         end
 
         yOffset = yOffset + 8  -- Spacing between professions
-
-        -- Show hint if no recipes are cached for this profession
-        local hasRecipes = profData.recipes and next(profData.recipes)
-        if not hasRecipes then
-            local recipeHint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            recipeHint:SetPoint("TOPLEFT", 16, -yOffset)
-            recipeHint:SetText(PP.COLORS.NEUTRAL .. L["PROF_HINT_RECIPES"] .. "|r")
-            yOffset = yOffset + 16
-        end
     end
 
     scrollChild:SetHeight(yOffset)
@@ -136,8 +154,9 @@ end
 -- @param categoryID number Category/tier ID
 -- @param tier table Tier data {name, skillLevel, maxSkill}
 -- @param index number Row index for alternating colors
+-- @param hasRecipes boolean Whether recipes have been scanned for this profession
 -- @return number Updated yOffset
-function PP.ProfessionListUI:CreateTierRow(parent, yOffset, profID, categoryID, tier, index)
+function PP.ProfessionListUI:CreateTierRow(parent, yOffset, profID, categoryID, tier, index, hasRecipes)
     local L = PP.L
     local row = CreateFrame("Frame", nil, parent)
     row:SetSize(parent:GetWidth(), 32)
@@ -191,21 +210,51 @@ function PP.ProfessionListUI:CreateTierRow(parent, yOffset, profID, categoryID, 
         calcBtn:SetSize(90, 22)
         calcBtn:SetPoint("RIGHT", -8, 0)
         calcBtn:SetText(L["BTN_CALCULATE"])
-        calcBtn:SetScript("OnClick", function()
-            -- Calculate path and switch to path tab
-            local path, totalCost = PP.PathOptimizer:CalculatePath(
-                profID, categoryID, tier.skillLevel, tier.maxSkill)
-            PP.charDb.lastPath = {
-                profID = profID,
-                categoryID = categoryID,
-                tierName = tier.name,
-                skillFrom = tier.skillLevel,
-                skillTo = tier.maxSkill,
-                path = path,
-                totalCost = totalCost,
-            }
-            PP.MainFrame:SetActiveTab("path")
-        end)
+
+        if not hasRecipes then
+            -- Disable the button and show a tooltip explaining why
+            calcBtn:Disable()
+            calcBtn:SetScript("OnEnter", function(self)
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                GameTooltip:AddLine(L["PATH_NEED_RECIPES"], 1, 0.5, 0)
+                GameTooltip:AddLine(L["PROF_HINT_RECIPES"], 1, 1, 1, true)
+                GameTooltip:Show()
+            end)
+            calcBtn:SetScript("OnLeave", function()
+                GameTooltip:Hide()
+            end)
+        else
+            calcBtn:SetScript("OnClick", function()
+                -- Calculate path and switch to path tab
+                local path, totalCost = PP.PathOptimizer:CalculatePath(
+                    profID, categoryID, tier.skillLevel, tier.maxSkill)
+
+                if #path == 0 then
+                    -- No path found - probably no skillable recipes at this level
+                    PP.charDb.lastPath = {
+                        profID = profID,
+                        categoryID = categoryID,
+                        tierName = tier.name,
+                        skillFrom = tier.skillLevel,
+                        skillTo = tier.maxSkill,
+                        path = {},
+                        totalCost = 0,
+                        noRecipesAvailable = true,
+                    }
+                else
+                    PP.charDb.lastPath = {
+                        profID = profID,
+                        categoryID = categoryID,
+                        tierName = tier.name,
+                        skillFrom = tier.skillLevel,
+                        skillTo = tier.maxSkill,
+                        path = path,
+                        totalCost = totalCost,
+                    }
+                end
+                PP.MainFrame:SetActiveTab("path")
+            end)
+        end
 
         -- Remaining points
         local remaining = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")

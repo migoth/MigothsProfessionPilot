@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-17
+
+### Fixed
+- AH tab integration completely reworked: custom tab was overlaid by standard tabs and non-functional because `AuctionHouseFrame_SetDisplayMode` doesn't exist in the modern retail AH.
+- Tab deactivation now hooks each existing AH tab's OnClick directly.
+- Panel uses overlay approach with `EnableMouse(true)` and raised frame level instead of fragile child-frame hide/show.
+
+### Improved
+- Profession list now clearly indicates when only a single fallback tier is available (hint to open profession window for all expansion tiers).
+- Recipe hints shown directly below each profession header instead of at the bottom.
+- Calculate Path button is disabled with tooltip when no recipes are scanned yet, preventing empty results.
+- Leveling Path view now shows specific error messages: "no skillable recipes at this level" vs "no path calculated".
+- Added German translations for all new UI strings.
+
 ## [0.2.1] - 2026-04-17
 
 ### Fixed
