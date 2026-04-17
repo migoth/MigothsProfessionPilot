@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-17
+
+### Added
+- Auction House tab: MigothsProfessionPilot UI is now embedded directly in the AH window as an extra tab. No need to open a separate window while at the auction house.
+
 ## [0.1.0] - 2026-04-16
 
 ### Added
