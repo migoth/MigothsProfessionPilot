@@ -5,6 +5,11 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.8] - 2026-04-17
+
+### Fixed
+- **AH button/panel hidden**: Set FrameStrata to HIGH and FrameLevel 500 on the AH icon button and floating panel so they render above other AuctionHouseFrame elements.
+
 ## [0.7.7] - 2026-04-17
 
 ### Changed

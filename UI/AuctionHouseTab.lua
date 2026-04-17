@@ -57,6 +57,8 @@ function PP.AuctionHouseTab:CreateButton()
     ahButton = CreateFrame("Button", "MigothsProfessionPilotAHTab",
                            AuctionHouseFrame, "BackdropTemplate")
     ahButton:SetSize(32, 32)
+    ahButton:SetFrameStrata("HIGH")
+    ahButton:SetFrameLevel(500)
 
     -- Stack below MCP's button if present, otherwise top-right
     local mcpTab = _G["MigothsCraftingProfitAHTab"]
@@ -143,6 +145,7 @@ function PP.AuctionHouseTab:CreatePanel()
     ahPanel = T:CreateWindow("MigothsProfessionPilotAHPanel", PANEL_WIDTH, PANEL_HEIGHT)
     ahPanel:ClearAllPoints()
     ahPanel:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", 40, 0)
+    ahPanel:SetFrameStrata("HIGH")
     ahPanel:Hide()
 
     ----------------------------------------------------------------
