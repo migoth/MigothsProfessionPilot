@@ -44,6 +44,7 @@ local function OnAddonLoaded(self, event, addonName)
     -- Initialize UI
     PP.MinimapButton:Init()
     PP.MainFrame:Init()
+    PP.AuctionHouseTab:Init()
 
     -- Auto-scan AH prices when AH opens
     PP:RegisterEvent("AUCTION_HOUSE_SHOW", function(self)
@@ -52,10 +53,15 @@ local function OnAddonLoaded(self, event, addonName)
                 PP.PriceSource:StartScan()
             end)
         end
+        -- Inject AH tab
+        C_Timer.After(0, function()
+            PP.AuctionHouseTab:OnAuctionHouseShow()
+        end)
     end)
 
     PP:RegisterEvent("AUCTION_HOUSE_CLOSED", function(self)
         PP.PriceSource:OnAuctionHouseClosed()
+        PP.AuctionHouseTab:OnAuctionHouseClosed()
     end)
 
     -- Rescan professions when trade skill window updates

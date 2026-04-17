@@ -38,3 +38,4 @@ UI\MainFrame.lua
 UI\ProfessionList.lua
 UI\LevelingPath.lua
 UI\ShoppingList.lua
+UI\AuctionHouseTab.lua

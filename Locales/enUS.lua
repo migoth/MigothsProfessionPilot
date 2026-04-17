@@ -108,6 +108,7 @@ L["COL_TOTAL"] = "Total"
 
 -- UI
 L["MAIN_TITLE"] = "MigothsProfessionPilot"
+L["AH_TAB_TITLE"] = "MigothsProfessionPilot"
 L["TAB_PROFESSIONS"] = "Professions"
 L["TAB_PATH"] = "Leveling Path"
 L["TAB_SHOPPING"] = "Shopping List"

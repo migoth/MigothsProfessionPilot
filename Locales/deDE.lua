@@ -107,6 +107,7 @@ PP:RegisterLocale("deDE", {
 
     -- UI
     ["MAIN_TITLE"] = "MigothsProfessionPilot",
+    ["AH_TAB_TITLE"] = "MigothsProfessionPilot",
     ["TAB_PROFESSIONS"] = "Berufe",
     ["TAB_PATH"] = "Leveling-Pfad",
     ["TAB_SHOPPING"] = "Einkaufsliste",
