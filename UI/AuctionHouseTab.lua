@@ -1,13 +1,12 @@
 -- AuctionHouseTab.lua
--- Adds a small shortcut button to the Auction House frame that opens
--- MigothsProfessionPilot in a modern floating panel beside the AH.
--- Uses PP.Theme for all styling – no Blizzard standard templates.
+-- Adds a Blizzard-style icon tab at the bottom of the Auction House frame
+-- that opens MigothsProfessionPilot in a floating panel beside the AH.
 
 local ADDON_NAME, PP = ...
 
 PP.AuctionHouseTab = {}
 
-local ahButton = nil        -- Small icon button on the AH frame
+local ahButton = nil        -- Blizzard-style tab at bottom of AH frame
 local ahPanel  = nil        -- The floating panel
 local isShown  = false       -- Whether our panel is currently visible
 
@@ -47,109 +46,87 @@ function PP.AuctionHouseTab:OnAuctionHouseClosed()
 end
 
 ------------------------------------------------------------------------
--- Vertical side-tab (right edge of AH frame)
+-- Blizzard-style bottom tab (icon only, with tooltip)
 ------------------------------------------------------------------------
 
---- Creates a vertical side-tab on the right edge of the AH frame.
+--- Creates a Blizzard-style tab at the bottom of the AH frame.
 function PP.AuctionHouseTab:CreateButton()
     local L = PP.L
-    local T = PP.Theme
-    local C = T.C
 
-    local TAB_WIDTH  = 28
-    local TAB_HEIGHT = 90
-    local TAB_YOFF   = -135  -- below MCP tab if both addons loaded
+    -- Find last existing tab (Blizzard tabs, or MCP tab if both addons loaded)
+    local lastTab
+    for i = 20, 1, -1 do
+        local tab = _G["AuctionHouseFrameTab" .. i]
+        if tab then
+            lastTab = tab
+            break
+        end
+    end
+    local mcpTab = _G["MigothsCraftingProfitAHTab"]
+    if mcpTab then lastTab = mcpTab end
 
-    ahButton = CreateFrame("Button", "MigothsProfessionPilotAHButton", AuctionHouseFrame)
-    ahButton:SetSize(TAB_WIDTH, TAB_HEIGHT)
-    ahButton:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", -1, TAB_YOFF)
-    ahButton:SetFrameStrata("HIGH")
+    -- Create Blizzard-style bottom tab (icon only, no text label)
+    ahButton = CreateFrame("Button", "MigothsProfessionPilotAHTab",
+                           AuctionHouseFrame, "PanelTabButtonTemplate")
+    ahButton:SetText(" ")
 
-    -- Background
-    local bg = ahButton:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(C(T.palette.surface))
-    ahButton.bg = bg
+    if lastTab then
+        ahButton:SetPoint("LEFT", lastTab, "RIGHT", -16, 0)
+    else
+        ahButton:SetPoint("BOTTOMLEFT", AuctionHouseFrame, "BOTTOMLEFT", 60, -31)
+    end
 
-    -- Left border (connecting to AH frame)
-    local leftBorder = ahButton:CreateTexture(nil, "BORDER")
-    leftBorder:SetSize(1, TAB_HEIGHT)
-    leftBorder:SetPoint("TOPLEFT", 0, 0)
-    leftBorder:SetColorTexture(C(T.palette.border))
+    -- Hide text, show icon only
+    local textObj = ahButton.Text or _G[ahButton:GetName() .. "Text"]
+    if textObj then textObj:SetAlpha(0) end
 
-    -- Right/top/bottom borders
-    local rightBorder = ahButton:CreateTexture(nil, "BORDER")
-    rightBorder:SetSize(1, TAB_HEIGHT)
-    rightBorder:SetPoint("TOPRIGHT", 0, 0)
-    rightBorder:SetColorTexture(C(T.palette.border))
-
-    local topBorder = ahButton:CreateTexture(nil, "BORDER")
-    topBorder:SetSize(TAB_WIDTH, 1)
-    topBorder:SetPoint("TOPLEFT", 0, 0)
-    topBorder:SetColorTexture(C(T.palette.border))
-
-    local bottomBorder = ahButton:CreateTexture(nil, "BORDER")
-    bottomBorder:SetSize(TAB_WIDTH, 1)
-    bottomBorder:SetPoint("BOTTOMLEFT", 0, 0)
-    bottomBorder:SetColorTexture(C(T.palette.border))
-
-    -- Accent stripe (thin cyan line at the very right edge)
-    local accent = ahButton:CreateTexture(nil, "ARTWORK")
-    accent:SetSize(2, TAB_HEIGHT - 2)
-    accent:SetPoint("RIGHT", -1, 0)
-    accent:SetColorTexture(C(T.palette.accentDim))
-    ahButton.accent = accent
-
-    -- Icon (centered upper area)
     local icon = ahButton:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(20, 20)
-    icon:SetPoint("TOP", 0, -10)
+    icon:SetSize(18, 18)
+    icon:SetPoint("CENTER", 0, -3)
     icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     ahButton.icon = icon
 
-    -- Vertical label "MPP"
-    local letters = { "M", "P", "P" }
-    for i, ch in ipairs(letters) do
-        local lbl = ahButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        lbl:SetPoint("TOP", 0, -34 - (i - 1) * 14)
-        lbl:SetText(ch)
-        lbl:SetTextColor(C(T.palette.textSecondary))
-    end
+    PanelTemplates_TabResize(ahButton, 10, nil, 36, 36)
+    PanelTemplates_DeselectTab(ahButton)
 
-    -- Hover / active states
-    ahButton:SetScript("OnEnter", function(self)
-        if not isShown then
-            self.bg:SetColorTexture(C(T.palette.hover))
-        end
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    -- Tooltip
+    ahButton:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:AddLine(L["AH_TAB_TITLE"])
         GameTooltip:AddLine(L["AH_BTN_TOOLTIP"], 1, 1, 1, true)
         GameTooltip:Show()
     end)
-    ahButton:SetScript("OnLeave", function(self)
-        if not isShown then
-            self.bg:SetColorTexture(C(T.palette.surface))
-        end
+    ahButton:HookScript("OnLeave", function()
         GameTooltip:Hide()
     end)
 
     ahButton:SetScript("OnClick", function()
         PP.AuctionHouseTab:TogglePanel()
     end)
+
+    -- Deselect our tab when a Blizzard AH tab is clicked
+    for i = 1, 20 do
+        local tab = _G["AuctionHouseFrameTab" .. i]
+        if tab then
+            tab:HookScript("OnClick", function()
+                if isShown then
+                    if ahPanel then ahPanel:Hide() end
+                    isShown = false
+                    PanelTemplates_DeselectTab(ahButton)
+                end
+            end)
+        end
+    end
 end
 
---- Updates the side-tab appearance based on panel visibility.
+--- Updates the tab appearance based on panel visibility.
 local function UpdateTabVisual()
     if not ahButton then return end
-    local T = PP.Theme
-    local C = T.C
     if isShown then
-        ahButton.bg:SetColorTexture(C(T.palette.tabActive))
-        ahButton.accent:SetColorTexture(C(T.palette.accent))
+        PanelTemplates_SelectTab(ahButton)
     else
-        ahButton.bg:SetColorTexture(C(T.palette.surface))
-        ahButton.accent:SetColorTexture(C(T.palette.accentDim))
+        PanelTemplates_DeselectTab(ahButton)
     end
 end
 

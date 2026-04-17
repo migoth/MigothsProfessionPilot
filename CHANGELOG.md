@@ -5,6 +5,11 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.5] - 2026-04-17
+
+### Changed
+- **AH tab redesign**: Replaced custom side-tab with a Blizzard-style bottom tab (icon only, with tooltip). Matches the native AH look.
+
 ## [0.7.4] - 2026-04-17
 
 ### Changed
