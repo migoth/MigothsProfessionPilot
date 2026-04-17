@@ -84,8 +84,7 @@ end
 PP:RegisterEvent("ADDON_LOADED", OnAddonLoaded)
 
 -- Slash commands
-SLASH_MIGOTHSPROFESSIONPILOT1 = "/pp"
-SLASH_MIGOTHSPROFESSIONPILOT2 = "/mpp"
+SLASH_MIGOTHSPROFESSIONPILOT1 = "/mpp"
 
 SlashCmdList["MIGOTHSPROFESSIONPILOT"] = function(msg)
     local L = PP.L
