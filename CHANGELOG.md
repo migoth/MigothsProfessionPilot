@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-04-17
+
+### Fixed
+- Professions are now detected automatically at login via `GetProfessions()` — no need to open the trade skill window first.
+- Expansion-specific skill tiers (e.g., Midnight 1/100) are now read correctly using `C_TradeSkillUI.GetProfessionInfoBySkillLineID()` instead of recipe categories, fixing tiers incorrectly showing as "Maxed".
+- Cached profession data is restored from SavedVariables on addon load so data persists across sessions.
+- Added `SKILL_LINES_CHANGED` listener for detecting newly learned professions.
+
+### Improved
+- Profession list shows a hint per profession when recipes haven't been scanned yet.
+- Clearer empty-state messages throughout the UI.
+
 ## [0.2.0] - 2026-04-17
 
 ### Added
