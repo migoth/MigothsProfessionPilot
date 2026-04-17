@@ -1,49 +1,23 @@
 -- LevelingPath.lua
 -- Displays the calculated leveling path step by step.
--- Compact layout: icon + recipe name + craft count + net cost.
+-- Modern UI redesign using PP.Theme for consistent styling.
+-- Compact layout: difficulty bar + icon + recipe name + craft count + net cost.
 -- Hover tooltip shows full cost breakdown and material list.
 
 local ADDON_NAME, PP = ...
 
 PP.LevelingPathUI = {}
 
---- Creates the leveling path panel.
--- @param parent Frame The content area
--- @return Frame
-function PP.LevelingPathUI:Create(parent)
-    local L = PP.L
-    local panel = CreateFrame("Frame", nil, parent)
-    panel:SetAllPoints()
+local T = PP.Theme
+local C = T.C
 
-    -- Header area
-    panel.headerText = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    panel.headerText:SetPoint("TOPLEFT", 8, -8)
-    panel.headerText:SetText(L["PATH_TITLE"])
-
-    panel.totalCostText = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    panel.totalCostText:SetPoint("TOPRIGHT", -8, -12)
-
-    panel.skillRangeText = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    panel.skillRangeText:SetPoint("TOPLEFT", 8, -28)
-    panel.skillRangeText:SetTextColor(0.7, 0.7, 0.7)
-
-    -- Scroll frame for path steps
-    local scrollFrame = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", 8, -50)
-    scrollFrame:SetPoint("BOTTOMRIGHT", -28, 8)
-
-    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
-    scrollChild:SetWidth(scrollFrame:GetWidth())
-    scrollChild:SetHeight(1)
-    scrollFrame:SetScrollChild(scrollChild)
-    panel.scrollChild = scrollChild
-
-    panel.Refresh = function()
-        PP.LevelingPathUI:RefreshPanel(panel)
-    end
-
-    return panel
-end
+--- Difficulty index to palette color mapping.
+local DIFF_COLORS = {
+    [0] = "diffOrange",
+    [1] = "diffYellow",
+    [2] = "diffGreen",
+    [3] = "diffGray",
+}
 
 --- Formats a total cost line, showing "Profit" for negative values.
 -- @param totalCost number Total net cost in copper
@@ -58,6 +32,52 @@ local function FormatTotalCostLine(totalCost, L)
     end
 end
 
+--- Creates the leveling path panel.
+-- @param parent Frame The content area
+-- @return Frame
+function PP.LevelingPathUI:Create(parent)
+    local L = PP.L
+    local panel = CreateFrame("Frame", nil, parent)
+    panel:SetAllPoints()
+
+    -- Header text (top-left)
+    panel.headerText = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    panel.headerText:SetPoint("TOPLEFT", 8, -8)
+    panel.headerText:SetText(L["PATH_TITLE"])
+    panel.headerText:SetTextColor(C(T.palette.textPrimary))
+
+    -- Total cost/profit (top-right)
+    panel.totalCostText = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    panel.totalCostText:SetPoint("TOPRIGHT", -8, -12)
+
+    -- Skill range line below header
+    panel.skillRangeText = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    panel.skillRangeText:SetPoint("TOPLEFT", 8, -28)
+    panel.skillRangeText:SetTextColor(C(T.palette.textSecondary))
+
+    -- Separator below header area
+    panel.headerSep = panel:CreateTexture(nil, "ARTWORK")
+    panel.headerSep:SetHeight(1)
+    panel.headerSep:SetPoint("TOPLEFT", 0, -46)
+    panel.headerSep:SetPoint("TOPRIGHT", 0, -46)
+    panel.headerSep:SetColorTexture(C(T.palette.border))
+
+    -- Scroll area container (positioned below header)
+    local scrollContainer = CreateFrame("Frame", nil, panel)
+    scrollContainer:SetPoint("TOPLEFT", 0, -48)
+    scrollContainer:SetPoint("BOTTOMRIGHT", 0, 0)
+
+    local scrollFrame, scrollChild = T:CreateScrollArea(scrollContainer)
+    panel.scrollFrame = scrollFrame
+    panel.scrollChild = scrollChild
+
+    panel.Refresh = function()
+        PP.LevelingPathUI:RefreshPanel(panel)
+    end
+
+    return panel
+end
+
 --- Refreshes the leveling path display with the last calculated path.
 -- @param panel Frame
 function PP.LevelingPathUI:RefreshPanel(panel)
@@ -66,10 +86,7 @@ function PP.LevelingPathUI:RefreshPanel(panel)
     if not scrollChild then return end
 
     -- Clear existing content
-    for _, child in pairs({scrollChild:GetChildren()}) do
-        child:Hide()
-        child:SetParent(nil)
-    end
+    T:ClearScrollChild(scrollChild)
 
     local pathData = PP.charDb.lastPath
     if not pathData or not pathData.path or #pathData.path == 0 then
@@ -77,27 +94,13 @@ function PP.LevelingPathUI:RefreshPanel(panel)
         panel.totalCostText:SetText("")
         panel.skillRangeText:SetText("")
 
-        local empty = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        empty:SetPoint("CENTER", 0, 10)
-        empty:SetTextColor(0.5, 0.5, 0.5)
-
-        local hint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        hint:SetPoint("TOP", empty, "BOTTOM", 0, -6)
-        hint:SetTextColor(0.4, 0.4, 0.4)
-
         if pathData and pathData.noRecipesAvailable then
-            -- Path was calculated but no skillable recipes found
             local tierName = pathData.tierName or ""
             panel.headerText:SetText(L["PATH_TITLE"] .. " - " .. tierName)
-            empty:SetText(L["PATH_NO_RECIPES"])
-            hint:SetText(L["PATH_NO_RECIPES_HINT"])
+            T:ShowEmptyState(scrollChild, L["PATH_NO_RECIPES"], L["PATH_NO_RECIPES_HINT"])
         else
-            -- No path calculated at all
-            empty:SetText(L["PATH_EMPTY"])
-            hint:SetText("")
+            T:ShowEmptyState(scrollChild, L["PATH_EMPTY"])
         end
-
-        scrollChild:SetHeight(100)
         return
     end
 
@@ -117,7 +120,7 @@ function PP.LevelingPathUI:RefreshPanel(panel)
 end
 
 --- Creates a single compact step row in the leveling path.
--- Layout: [Icon] Step N: Craft Xd RecipeName    Skill A->B    Net Cost
+-- Layout: [DiffBar][Icon] Step N: Craft Xd RecipeName    Skill A->B    Net Cost
 -- @param parent Frame Scroll child
 -- @param yOffset number Vertical position
 -- @param step table Path step data
@@ -125,61 +128,45 @@ end
 -- @return number Updated yOffset
 function PP.LevelingPathUI:CreateStepRow(parent, yOffset, step, index)
     local L = PP.L
-    local ROW_HEIGHT = 36
+    local ROW_HEIGHT = 42
 
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetSize(parent:GetWidth(), ROW_HEIGHT)
-    row:SetPoint("TOPLEFT", 0, -yOffset)
+    -- Use Theme row (alternating colors + hover highlight)
+    local row = T:CreateRow(parent, yOffset, ROW_HEIGHT, index)
 
-    -- Background
-    row.bg = row:CreateTexture(nil, "BACKGROUND")
-    row.bg:SetAllPoints()
-    if index % 2 == 0 then
-        row.bg:SetColorTexture(0.12, 0.12, 0.12, 0.5)
-    else
-        row.bg:SetColorTexture(0.08, 0.08, 0.08, 0.3)
-    end
-
-    -- Difficulty color bar on the left edge
-    local diffColor = PP.Utils.GetDifficultyColor(step.difficulty)
+    -- Difficulty color bar on the left edge (3px wide)
+    local diffKey = DIFF_COLORS[step.difficulty] or "diffGray"
     local diffBar = row:CreateTexture(nil, "ARTWORK")
     diffBar:SetSize(3, ROW_HEIGHT)
     diffBar:SetPoint("LEFT", 0, 0)
-    if step.difficulty == 0 then
-        diffBar:SetColorTexture(1, 0.5, 0.25, 1)     -- Orange
-    elseif step.difficulty == 1 then
-        diffBar:SetColorTexture(1, 1, 0, 1)           -- Yellow
-    elseif step.difficulty == 2 then
-        diffBar:SetColorTexture(0.25, 0.75, 0.25, 1)  -- Green
-    else
-        diffBar:SetColorTexture(0.5, 0.5, 0.5, 1)     -- Gray
-    end
+    diffBar:SetColorTexture(C(T.palette[diffKey]))
 
-    -- Recipe icon
-    local iconOffset = 8
+    -- Recipe icon (28x28)
+    local contentLeft = 8
     if step.icon then
         local iconTex = row:CreateTexture(nil, "ARTWORK")
-        iconTex:SetSize(24, 24)
+        iconTex:SetSize(28, 28)
         iconTex:SetPoint("LEFT", 8, 0)
         iconTex:SetTexture(step.icon)
         iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        iconOffset = 38
+        contentLeft = 42
     end
 
-    -- Craft instruction: "Step 1: Craft 15x Bronze Shortsword"
+    -- Main text: "Step N: Craft Xd RecipeName"
     local craftText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    craftText:SetPoint("LEFT", iconOffset, 4)
-    craftText:SetWidth(parent:GetWidth() - iconOffset - 180)
+    craftText:SetPoint("LEFT", contentLeft, 6)
+    craftText:SetWidth(parent:GetWidth() - contentLeft - 140)
     craftText:SetJustifyH("LEFT")
     craftText:SetWordWrap(false)
-    craftText:SetText(PP.COLORS.HEADER .. string.format(L["PATH_STEP"], index) .. ":|r "
-        .. string.format(L["PATH_CRAFT"], step.craftCount, step.name or "?"))
 
-    -- Skill range below the craft text
+    local stepLabel = string.format(L["PATH_STEP"], index)
+    local craftLabel = string.format(L["PATH_CRAFT"], step.craftCount, step.name or "?")
+    craftText:SetText(PP.COLORS.HEADER .. stepLabel .. ":|r " .. craftLabel)
+
+    -- Sub-text: skill range "Skill A -> B"
     local skillText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    skillText:SetPoint("TOPLEFT", craftText, "BOTTOMLEFT", 0, -1)
+    skillText:SetPoint("TOPLEFT", craftText, "BOTTOMLEFT", 0, -2)
     skillText:SetText(string.format(L["PATH_SKILL_RANGE"], step.skillFrom, step.skillTo))
-    skillText:SetTextColor(0.6, 0.6, 0.6)
+    skillText:SetTextColor(C(T.palette.textSecondary))
 
     -- Net cost on the right side
     local costText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -190,18 +177,15 @@ function PP.LevelingPathUI:CreateStepRow(parent, yOffset, step, index)
         costText:SetText(PP.Utils.FormatMoney(step.netCost))
     end
 
-    -- Tooltip on hover showing full breakdown + materials
-    row:EnableMouse(true)
+    -- Tooltip on hover - override the Theme row's default OnEnter/OnLeave
+    -- to add tooltip while preserving hover highlight behavior.
+    local baseColor = row._baseColor
     row:SetScript("OnEnter", function(self)
-        self.bg:SetColorTexture(0.2, 0.2, 0.3, 0.6)
+        self.bg:SetColorTexture(C(T.palette.rowHover))
         PP.LevelingPathUI:ShowStepTooltip(self, step)
     end)
     row:SetScript("OnLeave", function(self)
-        if index % 2 == 0 then
-            self.bg:SetColorTexture(0.12, 0.12, 0.12, 0.5)
-        else
-            self.bg:SetColorTexture(0.08, 0.08, 0.08, 0.3)
-        end
+        self.bg:SetColorTexture(C(baseColor))
         GameTooltip:Hide()
     end)
 
@@ -238,12 +222,14 @@ function PP.LevelingPathUI:ShowStepTooltip(anchor, step)
     else
         GameTooltip:AddDoubleLine(L["PATH_NET_COST"], PP.Utils.FormatMoney(step.netCost), 1, 1, 1)
     end
-    GameTooltip:AddDoubleLine(L["PATH_COST_PER_POINT"], PP.Utils.FormatMoney(math.abs(step.costPerPoint)), 0.7, 0.7, 0.7)
+    GameTooltip:AddDoubleLine(L["PATH_COST_PER_POINT"],
+        PP.Utils.FormatMoney(math.abs(step.costPerPoint)), 0.7, 0.7, 0.7)
 
     GameTooltip:AddLine(" ")
 
     -- Material list
-    GameTooltip:AddLine(string.format("Materials (x%d crafts):", step.craftCount), 0, 0.8, 1)
+    GameTooltip:AddLine(string.format("Materials (x%d crafts):", step.craftCount),
+        C(T.palette.accent))
     if step.reagents then
         for _, reagent in ipairs(step.reagents) do
             if not reagent.isOptional then
@@ -257,7 +243,7 @@ function PP.LevelingPathUI:ShowStepTooltip(anchor, step)
                     or string.format(L["INV_NEED_TO_BUY"], toBuy)
 
                 GameTooltip:AddDoubleLine(
-                    string.format("  %dx %s", reagent.quantity * step.craftCount, itemName),
+                    string.format("  %dx %s", totalNeeded, itemName),
                     statusColor .. status .. "|r",
                     1, 1, 1)
             end
@@ -268,7 +254,7 @@ function PP.LevelingPathUI:ShowStepTooltip(anchor, step)
     if step.outputItemID then
         GameTooltip:AddLine(" ")
         local outputName = PP.Utils.GetItemName(step.outputItemID) or ("Item:" .. step.outputItemID)
-        GameTooltip:AddLine("Produces: " .. outputName, 0.7, 0.8, 1)
+        GameTooltip:AddLine("Produces: " .. outputName, C(T.palette.accentDim))
     end
 
     GameTooltip:Show()

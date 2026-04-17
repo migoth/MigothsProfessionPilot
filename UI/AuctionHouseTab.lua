@@ -1,20 +1,29 @@
 -- AuctionHouseTab.lua
 -- Adds a small shortcut button to the Auction House frame that opens
--- MigothsProfessionPilot in a standalone floating panel beside the AH.
+-- MigothsProfessionPilot in a modern floating panel beside the AH.
+-- Uses PP.Theme for all styling – no Blizzard standard templates.
 
 local ADDON_NAME, PP = ...
 
 PP.AuctionHouseTab = {}
 
 local ahButton = nil        -- Small icon button on the AH frame
-local ahPanel = nil          -- The floating panel
-local isShown = false        -- Whether our panel is currently visible
+local ahPanel  = nil        -- The floating panel
+local isShown  = false       -- Whether our panel is currently visible
+
+------------------------------------------------------------------------
+-- Init
+------------------------------------------------------------------------
 
 --- Initializes the AH integration. Called once from Init.lua.
 function PP.AuctionHouseTab:Init()
     -- Nothing to do here; OnAuctionHouseShow/OnAuctionHouseClosed are called
     -- from the central event handlers in Init.lua.
 end
+
+------------------------------------------------------------------------
+-- AH lifecycle
+------------------------------------------------------------------------
 
 --- Called when the AH window opens. Creates the button if needed.
 function PP.AuctionHouseTab:OnAuctionHouseShow()
@@ -36,13 +45,17 @@ function PP.AuctionHouseTab:OnAuctionHouseClosed()
     isShown = false
 end
 
+------------------------------------------------------------------------
+-- AH icon button (24x24 on the AH title bar)
+------------------------------------------------------------------------
+
 --- Creates a small shortcut button on the AH title bar.
 function PP.AuctionHouseTab:CreateButton()
     local L = PP.L
+    local T = PP.Theme
 
     ahButton = CreateFrame("Button", "MigothsProfessionPilotAHButton", AuctionHouseFrame)
     ahButton:SetSize(24, 24)
-    -- Position in the top-right of the AH frame, left of CraftProfit's button
     ahButton:SetPoint("TOPRIGHT", AuctionHouseFrame, "TOPRIGHT", -56, -4)
     ahButton:SetFrameStrata("HIGH")
 
@@ -74,240 +87,153 @@ function PP.AuctionHouseTab:CreateButton()
     end)
 end
 
+------------------------------------------------------------------------
+-- Floating panel (720x500, Theme-styled)
+------------------------------------------------------------------------
+
 --- Creates the floating panel that appears beside the AH.
 function PP.AuctionHouseTab:CreatePanel()
     local L = PP.L
-    local PANEL_WIDTH = 700
-    local PANEL_HEIGHT = 480
+    local T = PP.Theme
+    local C = T.C
 
-    ahPanel = CreateFrame("Frame", "MigothsProfessionPilotAHPanel", UIParent, "BackdropTemplate")
-    ahPanel:SetSize(PANEL_WIDTH, PANEL_HEIGHT)
-    ahPanel:SetFrameStrata("HIGH")
-    ahPanel:SetFrameLevel(100)
-    ahPanel:EnableMouse(true)
-    ahPanel:SetMovable(true)
-    ahPanel:SetClampedToScreen(true)
+    local PANEL_WIDTH  = 720
+    local PANEL_HEIGHT = 500
+
+    -- Main window via Theme helper
+    ahPanel = T:CreateWindow("MigothsProfessionPilotAHPanel", PANEL_WIDTH, PANEL_HEIGHT)
+    ahPanel:ClearAllPoints()
+    ahPanel:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", 4, 0)
     ahPanel:Hide()
 
-    -- Position to the right of the AH window
-    ahPanel:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", 4, 0)
+    ----------------------------------------------------------------
+    -- Title bar
+    ----------------------------------------------------------------
+    local titleBar, titleText = T:CreateTitleBar(ahPanel, L["MAIN_TITLE"])
 
-    -- Make it draggable
-    ahPanel:RegisterForDrag("LeftButton")
-    ahPanel:SetScript("OnDragStart", function(self)
-        self:StartMoving()
-    end)
-    ahPanel:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-    end)
-
-    -- Backdrop
-    ahPanel:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true,
-        tileSize = 16,
-        edgeSize = 16,
-        insets = {left = 4, right = 4, top = 4, bottom = 4},
-    })
-    ahPanel:SetBackdropColor(0.05, 0.05, 0.08, 0.95)
-    ahPanel:SetBackdropBorderColor(0.3, 0.3, 0.4, 0.8)
-
-    -- Header bar
-    local header = CreateFrame("Frame", nil, ahPanel)
-    header:SetPoint("TOPLEFT", 6, -6)
-    header:SetPoint("TOPRIGHT", -6, -6)
-    header:SetHeight(28)
-
-    header.bg = header:CreateTexture(nil, "BACKGROUND")
-    header.bg:SetAllPoints()
-    header.bg:SetColorTexture(0.12, 0.12, 0.18, 0.9)
-
-    -- Title
-    local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("LEFT", 8, 0)
-    title:SetText(PP.COLORS.HEADER .. L["MAIN_TITLE"] .. "|r")
-
-    -- Close button
-    local closeBtn = CreateFrame("Button", nil, header, "UIPanelCloseButton")
-    closeBtn:SetSize(20, 20)
-    closeBtn:SetPoint("RIGHT", -2, 0)
-    closeBtn:SetScript("OnClick", function()
+    -- Close button (right edge of title bar)
+    local closeBtn = T:CreateCloseButton(titleBar, function()
         ahPanel:Hide()
         isShown = false
     end)
+    closeBtn:SetPoint("RIGHT", -4, 0)
 
-    -- Last scan info
-    ahPanel.scanInfo = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    ahPanel.scanInfo:SetPoint("RIGHT", closeBtn, "LEFT", -8, 0)
-    ahPanel.scanInfo:SetTextColor(0.6, 0.6, 0.6)
+    -- Scan info text (left of close button)
+    ahPanel.scanInfo = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    ahPanel.scanInfo:SetPoint("RIGHT", closeBtn, "LEFT", -12, 0)
+    ahPanel.scanInfo:SetTextColor(C(T.palette.textMuted))
 
-    -- Scan button
-    local scanBtn = CreateFrame("Button", nil, header, "UIPanelButtonTemplate")
-    scanBtn:SetSize(70, 20)
+    -- Scan button (left of scan info)
+    local scanBtn = T:CreateButton(titleBar, L["BTN_SCAN"], 70, 22, true)
     scanBtn:SetPoint("RIGHT", ahPanel.scanInfo, "LEFT", -8, 0)
-    scanBtn:SetText(L["BTN_SCAN"])
     scanBtn:SetScript("OnClick", function()
         PP.PriceSource:StartScan()
     end)
 
+    ----------------------------------------------------------------
     -- Tab bar
-    local tabBar = CreateFrame("Frame", nil, ahPanel)
-    tabBar:SetPoint("TOPLEFT", 6, -38)
-    tabBar:SetPoint("TOPRIGHT", -6, -38)
-    tabBar:SetHeight(24)
-
+    ----------------------------------------------------------------
     local tabs = {
-        {id = "professions", label = L["TAB_PROFESSIONS"]},
-        {id = "path",        label = L["TAB_PATH"]},
-        {id = "shopping",    label = L["TAB_SHOPPING"]},
-        {id = "settings",    label = L["TAB_SETTINGS"]},
+        { id = "professions", label = L["TAB_PROFESSIONS"] },
+        { id = "path",        label = L["TAB_PATH"] },
+        { id = "shopping",    label = L["TAB_SHOPPING"] },
+        { id = "settings",    label = L["TAB_SETTINGS"] },
     }
 
-    ahPanel.tabButtons = {}
-    ahPanel.panels = {}
-    ahPanel.activeTab = "professions"
+    local tabBar, tabBtns = T:CreateTabBar(ahPanel, tabs, function(tabID)
+        PP.AuctionHouseTab:SetEmbeddedTab(tabID)
+    end)
+    tabBar:SetPoint("TOPLEFT", 1, -37)
+    tabBar:SetPoint("TOPRIGHT", -1, -37)
 
-    local tabWidth = math.floor((PANEL_WIDTH - 12) / #tabs)
+    ahPanel.tabButtons = tabBtns
+    ahPanel.activeTab  = "professions"
 
-    for i, tabDef in ipairs(tabs) do
-        local btn = CreateFrame("Button", nil, tabBar)
-        btn:SetSize(tabWidth, 24)
-        btn:SetPoint("LEFT", (i - 1) * tabWidth, 0)
-
-        btn.bg = btn:CreateTexture(nil, "BACKGROUND")
-        btn.bg:SetAllPoints()
-        btn.bg:SetColorTexture(0.15, 0.15, 0.15, 0.8)
-
-        btn.text = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        btn.text:SetPoint("CENTER")
-        btn.text:SetText(tabDef.label)
-
-        btn.activeLine = btn:CreateTexture(nil, "OVERLAY")
-        btn.activeLine:SetHeight(2)
-        btn.activeLine:SetPoint("BOTTOMLEFT")
-        btn.activeLine:SetPoint("BOTTOMRIGHT")
-        btn.activeLine:SetColorTexture(0, 0.8, 1, 1)
-        btn.activeLine:Hide()
-
-        btn:SetScript("OnClick", function()
-            PP.AuctionHouseTab:SetEmbeddedTab(tabDef.id)
-        end)
-        btn:SetScript("OnEnter", function(self)
-            if ahPanel.activeTab ~= tabDef.id then
-                self.bg:SetColorTexture(0.25, 0.25, 0.25, 0.8)
-            end
-        end)
-        btn:SetScript("OnLeave", function(self)
-            if ahPanel.activeTab ~= tabDef.id then
-                self.bg:SetColorTexture(0.15, 0.15, 0.15, 0.8)
-            end
-        end)
-
-        ahPanel.tabButtons[tabDef.id] = btn
-    end
-
-    -- Content area
+    ----------------------------------------------------------------
+    -- Content area (below tab bar)
+    ----------------------------------------------------------------
     local content = CreateFrame("Frame", nil, ahPanel)
-    content:SetPoint("TOPLEFT", 6, -66)
-    content:SetPoint("BOTTOMRIGHT", -6, 6)
+    content:SetPoint("TOPLEFT", 1, -68)
+    content:SetPoint("BOTTOMRIGHT", -1, 1)
     ahPanel.content = content
 
-    -- Create sub-panels
+    ----------------------------------------------------------------
+    -- Sub-panels
+    ----------------------------------------------------------------
+    ahPanel.panels = {}
     ahPanel.panels["professions"] = PP.ProfessionListUI:Create(content)
-    ahPanel.panels["path"] = PP.LevelingPathUI:Create(content)
-    ahPanel.panels["shopping"] = PP.ShoppingListUI:Create(content)
-    ahPanel.panels["settings"] = self:CreateEmbeddedSettingsPanel(content)
+    ahPanel.panels["path"]        = PP.LevelingPathUI:Create(content)
+    ahPanel.panels["shopping"]    = PP.ShoppingListUI:Create(content)
+    ahPanel.panels["settings"]    = self:CreateEmbeddedSettingsPanel(content)
 
+    -- Activate the default tab
     self:SetEmbeddedTab("professions")
 end
+
+------------------------------------------------------------------------
+-- Embedded settings panel (Theme checkboxes, no Blizzard templates)
+------------------------------------------------------------------------
 
 --- Creates a settings panel for the embedded view.
 -- @param parent Frame Content area
 -- @return Frame
 function PP.AuctionHouseTab:CreateEmbeddedSettingsPanel(parent)
     local L = PP.L
+    local T = PP.Theme
+    local C = T.C
+
     local panel = CreateFrame("Frame", nil, parent)
     panel:SetAllPoints()
 
-    local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 8, -8)
+    -- Section title
+    local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOPLEFT", 16, -16)
     title:SetText(L["SETTINGS_TITLE"])
+    title:SetTextColor(C(T.palette.textPrimary))
 
-    local yOffset = 40
+    local yOffset = 48
 
     -- Include Sellback
-    local sellbackCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    sellbackCheck:SetSize(26, 26)
-    sellbackCheck:SetPoint("TOPLEFT", 8, -yOffset)
-    sellbackCheck:SetChecked(PP.Database:GetSettings().includeSellback)
-    local sellbackLabel = sellbackCheck:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    sellbackLabel:SetPoint("LEFT", sellbackCheck, "RIGHT", 4, 0)
-    sellbackLabel:SetText(L["SETTINGS_INCLUDE_SELLBACK"])
-    local sellbackDesc = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    sellbackDesc:SetPoint("TOPLEFT", 42, -(yOffset + 24))
-    sellbackDesc:SetText(L["SETTINGS_INCLUDE_SELLBACK_DESC"])
-    sellbackDesc:SetTextColor(0.5, 0.5, 0.5)
-    sellbackCheck:SetScript("OnClick", function(self)
-        PP.Database:GetSettings().includeSellback = self:GetChecked()
-    end)
-    yOffset = yOffset + 50
+    yOffset = T:CreateCheckbox(panel, L["SETTINGS_INCLUDE_SELLBACK"],
+        L["SETTINGS_INCLUDE_SELLBACK_DESC"],
+        PP.Database:GetSettings().includeSellback,
+        function(checked) PP.Database:GetSettings().includeSellback = checked end,
+        yOffset)
 
     -- Use Inventory
-    local invCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    invCheck:SetSize(26, 26)
-    invCheck:SetPoint("TOPLEFT", 8, -yOffset)
-    invCheck:SetChecked(PP.Database:GetSettings().useInventory)
-    local invLabel = invCheck:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    invLabel:SetPoint("LEFT", invCheck, "RIGHT", 4, 0)
-    invLabel:SetText(L["SETTINGS_USE_INVENTORY"])
-    local invDesc = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    invDesc:SetPoint("TOPLEFT", 42, -(yOffset + 24))
-    invDesc:SetText(L["SETTINGS_USE_INVENTORY_DESC"])
-    invDesc:SetTextColor(0.5, 0.5, 0.5)
-    invCheck:SetScript("OnClick", function(self)
-        PP.Database:GetSettings().useInventory = self:GetChecked()
-    end)
-    yOffset = yOffset + 50
+    yOffset = T:CreateCheckbox(panel, L["SETTINGS_USE_INVENTORY"],
+        L["SETTINGS_USE_INVENTORY_DESC"],
+        PP.Database:GetSettings().useInventory,
+        function(checked) PP.Database:GetSettings().useInventory = checked end,
+        yOffset)
 
     -- Auto Scan
-    local autoCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    autoCheck:SetSize(26, 26)
-    autoCheck:SetPoint("TOPLEFT", 8, -yOffset)
-    autoCheck:SetChecked(PP.Database:GetSettings().autoScan)
-    local autoLabel = autoCheck:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    autoLabel:SetPoint("LEFT", autoCheck, "RIGHT", 4, 0)
-    autoLabel:SetText(L["SETTINGS_AUTO_SCAN"])
-    local autoDesc = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    autoDesc:SetPoint("TOPLEFT", 42, -(yOffset + 24))
-    autoDesc:SetText(L["SETTINGS_AUTO_SCAN_DESC"])
-    autoDesc:SetTextColor(0.5, 0.5, 0.5)
-    autoCheck:SetScript("OnClick", function(self)
-        PP.Database:GetSettings().autoScan = self:GetChecked()
-    end)
+    yOffset = T:CreateCheckbox(panel, L["SETTINGS_AUTO_SCAN"],
+        L["SETTINGS_AUTO_SCAN_DESC"],
+        PP.Database:GetSettings().autoScan,
+        function(checked) PP.Database:GetSettings().autoScan = checked end,
+        yOffset)
 
     panel.Refresh = function() end
     return panel
 end
 
+------------------------------------------------------------------------
+-- Tab switching
+------------------------------------------------------------------------
+
 --- Switches the sub-tab inside the panel.
 -- @param tabID string
 function PP.AuctionHouseTab:SetEmbeddedTab(tabID)
     if not ahPanel then return end
+
+    local T = PP.Theme
     ahPanel.activeTab = tabID
 
-    for id, btn in pairs(ahPanel.tabButtons) do
-        if id == tabID then
-            btn.bg:SetColorTexture(0.2, 0.2, 0.3, 0.9)
-            btn.activeLine:Show()
-            btn.text:SetTextColor(1, 1, 1)
-        else
-            btn.bg:SetColorTexture(0.15, 0.15, 0.15, 0.8)
-            btn.activeLine:Hide()
-            btn.text:SetTextColor(0.6, 0.6, 0.6)
-        end
-    end
+    -- Update tab button visuals via Theme helper
+    T:SetActiveTab(ahPanel.tabButtons, tabID)
 
+    -- Show/hide content panels
     for id, panel in pairs(ahPanel.panels) do
         if id == tabID then
             panel:Show()
@@ -317,6 +243,10 @@ function PP.AuctionHouseTab:SetEmbeddedTab(tabID)
         end
     end
 end
+
+------------------------------------------------------------------------
+-- Toggle / visibility
+------------------------------------------------------------------------
 
 --- Toggles the floating panel.
 function PP.AuctionHouseTab:TogglePanel()
@@ -337,6 +267,10 @@ end
 function PP.AuctionHouseTab:IsEmbeddedVisible()
     return ahPanel and ahPanel:IsShown()
 end
+
+------------------------------------------------------------------------
+-- Scan info
+------------------------------------------------------------------------
 
 --- Updates the scan timestamp in the header.
 function PP.AuctionHouseTab:UpdateScanInfo()

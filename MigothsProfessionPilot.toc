@@ -33,6 +33,7 @@ Modules\PriceSource.lua
 Modules\PathOptimizer.lua
 
 # UI
+UI\Theme.lua
 UI\MinimapButton.lua
 UI\MainFrame.lua
 UI\ProfessionList.lua

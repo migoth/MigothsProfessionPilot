@@ -1,6 +1,7 @@
 -- ProfessionList.lua
 -- Profession overview panel showing all professions and their expansion tiers.
--- Displays current vs max skill and highlights incomplete tiers.
+-- Modern UI redesign using PP.Theme helpers exclusively.
+-- Displays current vs max skill with progress bars and highlights incomplete tiers.
 
 local ADDON_NAME, PP = ...
 
@@ -8,40 +9,82 @@ PP.ProfessionListUI = {}
 
 --- Creates the profession list panel.
 -- @param parent Frame The content area
--- @return Frame
+-- @return Frame panel with .Refresh function
 function PP.ProfessionListUI:Create(parent)
     local L = PP.L
+    local T = PP.Theme
+
     local panel = CreateFrame("Frame", nil, parent)
     panel:SetAllPoints()
 
-    -- Title
+    -- Title at TOPLEFT
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 8, -8)
     title:SetText(L["TAB_PROFESSIONS"])
+    title:SetTextColor(T.C(T.palette.textPrimary))
 
-    -- Filter: incomplete only
-    local filterCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    filterCheck:SetSize(22, 22)
-    filterCheck:SetPoint("TOPRIGHT", -8, -8)
-    filterCheck.text = filterCheck:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    filterCheck.text:SetPoint("RIGHT", filterCheck, "LEFT", -4, 0)
-    filterCheck.text:SetText(L["FILTER_INCOMPLETE"])
+    -- Filter toggle at TOPRIGHT: a small clickable frame with text
+    local filterBtn = CreateFrame("Button", nil, panel)
+    filterBtn:SetSize(120, 22)
+    filterBtn:SetPoint("TOPRIGHT", -8, -9)
+
+    filterBtn.bg = filterBtn:CreateTexture(nil, "BACKGROUND")
+    filterBtn.bg:SetAllPoints()
+    filterBtn.bg:SetColorTexture(T.C(T.palette.btnNormal))
+
+    -- Indicator square (acts as checkbox visual)
+    filterBtn.indicator = filterBtn:CreateTexture(nil, "ARTWORK")
+    filterBtn.indicator:SetSize(12, 12)
+    filterBtn.indicator:SetPoint("LEFT", 6, 0)
+    filterBtn.indicator:SetColorTexture(T.C(T.palette.borderLight))
+
+    filterBtn.label = filterBtn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    filterBtn.label:SetPoint("LEFT", filterBtn.indicator, "RIGHT", 5, 0)
+    filterBtn.label:SetText(L["FILTER_INCOMPLETE"])
+    filterBtn.label:SetTextColor(T.C(T.palette.textSecondary))
+
     panel.filterIncomplete = false
-    filterCheck:SetScript("OnClick", function(self)
-        panel.filterIncomplete = self:GetChecked()
+
+    local function UpdateFilterVisual()
+        if panel.filterIncomplete then
+            filterBtn.indicator:SetColorTexture(T.C(T.palette.accent))
+            filterBtn.label:SetTextColor(T.C(T.palette.textPrimary))
+            filterBtn.bg:SetColorTexture(T.C(T.palette.tabActive))
+        else
+            filterBtn.indicator:SetColorTexture(T.C(T.palette.borderLight))
+            filterBtn.label:SetTextColor(T.C(T.palette.textSecondary))
+            filterBtn.bg:SetColorTexture(T.C(T.palette.btnNormal))
+        end
+    end
+
+    filterBtn:SetScript("OnClick", function()
+        panel.filterIncomplete = not panel.filterIncomplete
+        UpdateFilterVisual()
         PP.ProfessionListUI:RefreshPanel(panel)
     end)
 
-    -- Scroll frame
-    local scrollFrame = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", 8, -36)
-    scrollFrame:SetPoint("BOTTOMRIGHT", -28, 8)
+    filterBtn:SetScript("OnEnter", function(self)
+        self.bg:SetColorTexture(T.C(T.palette.btnHover))
+    end)
 
-    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
-    scrollChild:SetWidth(scrollFrame:GetWidth())
-    scrollChild:SetHeight(1)
-    scrollFrame:SetScrollChild(scrollChild)
+    filterBtn:SetScript("OnLeave", function(self)
+        if panel.filterIncomplete then
+            self.bg:SetColorTexture(T.C(T.palette.tabActive))
+        else
+            self.bg:SetColorTexture(T.C(T.palette.btnNormal))
+        end
+    end)
+
+    UpdateFilterVisual()
+
+    -- Scroll area below title/filter bar
+    local scrollContainer = CreateFrame("Frame", nil, panel)
+    scrollContainer:SetPoint("TOPLEFT", 0, -36)
+    scrollContainer:SetPoint("BOTTOMRIGHT", 0, 0)
+
+    local scrollFrame, scrollChild = T:CreateScrollArea(scrollContainer)
     panel.scrollChild = scrollChild
+    panel.scrollFrame = scrollFrame
 
     panel.Refresh = function()
         PP.ProfessionListUI:RefreshPanel(panel)
@@ -54,96 +97,85 @@ end
 -- @param panel Frame
 function PP.ProfessionListUI:RefreshPanel(panel)
     local L = PP.L
+    local T = PP.Theme
     local scrollChild = panel.scrollChild
     if not scrollChild then return end
 
-    -- Clear existing rows
-    for _, child in pairs({scrollChild:GetChildren()}) do
-        child:Hide()
-        child:SetParent(nil)
-    end
+    -- Clear existing content
+    T:ClearScrollChild(scrollChild)
 
     local professions = PP.ProfessionScanner:GetAllProfessions()
     local yOffset = 0
 
     -- Check if we have any data
     local hasData = false
-    for _ in pairs(professions) do hasData = true; break end
+    for _ in pairs(professions) do
+        hasData = true
+        break
+    end
 
     if not hasData then
-        local hint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        hint:SetPoint("CENTER", 0, 10)
-        hint:SetText(L["PROF_EMPTY"])
-        hint:SetTextColor(0.5, 0.5, 0.5)
-        scrollChild:SetHeight(100)
+        T:ShowEmptyState(scrollChild, L["PROF_EMPTY"], L["PROF_HINT_RECIPES"])
         return
     end
 
     -- Display each profession and its tiers (skip gathering professions)
     for profID, profData in pairs(professions) do
         if not PP.GATHERING_PROFESSION_IDS[profID] then
-        -- Profession header
-        local header = CreateFrame("Frame", nil, scrollChild)
-        header:SetSize(scrollChild:GetWidth(), 28)
-        header:SetPoint("TOPLEFT", 0, -yOffset)
+            -- Profession section header via Theme
+            local profName = profData.name or "Unknown"
+            yOffset = T:CreateSectionHeader(scrollChild, yOffset, profName)
 
-        header.bg = header:CreateTexture(nil, "BACKGROUND")
-        header.bg:SetAllPoints()
-        header.bg:SetColorTexture(0.15, 0.15, 0.25, 0.8)
-
-        local profName = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        profName:SetPoint("LEFT", 8, 0)
-        profName:SetText(PP.COLORS.HEADER .. (profData.name or "Unknown") .. "|r")
-
-        yOffset = yOffset + 30
-
-        -- Show hint if no recipes are cached for this profession
-        local hasRecipes = profData.recipes and next(profData.recipes)
-        if not hasRecipes then
-            local recipeHint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            recipeHint:SetPoint("TOPLEFT", 16, -yOffset)
-            recipeHint:SetText(PP.COLORS.NEUTRAL .. L["PROF_HINT_RECIPES"] .. "|r")
-            yOffset = yOffset + 18
-        end
-
-        -- Check if we only have the fallback single tier (no real expansion data)
-        local tierCount = 0
-        local onlyFallback = false
-        for _ in pairs(profData.tiers or {}) do tierCount = tierCount + 1 end
-        if tierCount == 1 then
-            for id, _ in pairs(profData.tiers) do
-                if id == profID then onlyFallback = true end
+            -- Check if recipes are cached for this profession
+            local hasRecipes = profData.recipes and next(profData.recipes)
+            if not hasRecipes then
+                local recipeHint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                recipeHint:SetPoint("TOPLEFT", 16, -yOffset)
+                recipeHint:SetText(PP.COLORS.NEUTRAL .. L["PROF_HINT_RECIPES"] .. "|r")
+                yOffset = yOffset + 18
             end
-        end
 
-        if onlyFallback then
-            -- Show hint to open profession window for expansion breakdown
-            local hint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            hint:SetPoint("TOPLEFT", 16, -yOffset)
-            hint:SetText(PP.COLORS.GRAY .. L["PROF_HINT_OPEN_TIERS"] .. "|r")
-            yOffset = yOffset + 18
-        end
-
-        -- Expansion tiers
-        local displayedTiers = 0
-        for categoryID, tier in pairs(profData.tiers or {}) do
-            local isMaxed = tier.skillLevel >= tier.maxSkill
-            if not panel.filterIncomplete or not isMaxed then
-                displayedTiers = displayedTiers + 1
-                yOffset = self:CreateTierRow(scrollChild, yOffset, profID, categoryID, tier, displayedTiers, hasRecipes)
+            -- Check if we only have the fallback single tier (no real expansion data)
+            local tierCount = 0
+            local onlyFallback = false
+            for _ in pairs(profData.tiers or {}) do
+                tierCount = tierCount + 1
             end
-        end
+            if tierCount == 1 then
+                for id, _ in pairs(profData.tiers) do
+                    if id == profID then
+                        onlyFallback = true
+                    end
+                end
+            end
 
-        -- If no tiers shown for this profession (e.g. all maxed and filtering)
-        if displayedTiers == 0 and panel.filterIncomplete then
-            local allMaxed = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            allMaxed:SetPoint("TOPLEFT", 16, -yOffset)
-            allMaxed:SetText(PP.COLORS.MAXED .. L["SKILL_MAXED"] .. "|r")
-            yOffset = yOffset + 20
-        end
+            if onlyFallback then
+                local hint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                hint:SetPoint("TOPLEFT", 16, -yOffset)
+                hint:SetText(PP.COLORS.GRAY .. L["PROF_HINT_OPEN_TIERS"] .. "|r")
+                yOffset = yOffset + 18
+            end
 
-        yOffset = yOffset + 8  -- Spacing between professions
-        end -- not gathering profession
+            -- Expansion tiers
+            local displayedTiers = 0
+            for categoryID, tier in pairs(profData.tiers or {}) do
+                local isMaxed = tier.skillLevel >= tier.maxSkill
+                if not panel.filterIncomplete or not isMaxed then
+                    displayedTiers = displayedTiers + 1
+                    yOffset = self:CreateTierRow(scrollChild, yOffset, profID, categoryID, tier, displayedTiers, hasRecipes)
+                end
+            end
+
+            -- If all tiers maxed and filtering is on
+            if displayedTiers == 0 and panel.filterIncomplete then
+                local allMaxed = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                allMaxed:SetPoint("TOPLEFT", 16, -yOffset)
+                allMaxed:SetText(PP.COLORS.MAXED .. L["SKILL_MAXED"] .. "|r")
+                yOffset = yOffset + 20
+            end
+
+            yOffset = yOffset + 8 -- Spacing between professions
+        end
     end
 
     scrollChild:SetHeight(yOffset)
@@ -160,62 +192,44 @@ end
 -- @return number Updated yOffset
 function PP.ProfessionListUI:CreateTierRow(parent, yOffset, profID, categoryID, tier, index, hasRecipes)
     local L = PP.L
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetSize(parent:GetWidth(), 32)
-    row:SetPoint("TOPLEFT", 0, -yOffset)
+    local T = PP.Theme
+    local ROW_HEIGHT = 36
 
-    -- Alternating background
-    row.bg = row:CreateTexture(nil, "BACKGROUND")
-    row.bg:SetAllPoints()
-    row.bg:SetColorTexture(index % 2 == 0 and 0.1 or 0.07, index % 2 == 0 and 0.1 or 0.07, 0.12, 0.5)
+    -- Alternating row via Theme
+    local row = T:CreateRow(parent, yOffset, ROW_HEIGHT, index)
 
-    -- Tier name (expansion)
+    -- Tier name (indented 16px)
     local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     nameText:SetPoint("LEFT", 16, 0)
-    nameText:SetWidth(200)
+    nameText:SetWidth(180)
     nameText:SetJustifyH("LEFT")
     nameText:SetText(tier.name or "Unknown")
-
-    -- Skill progress bar
-    local barBg = CreateFrame("Frame", nil, row)
-    barBg:SetSize(200, 16)
-    barBg:SetPoint("LEFT", 230, 0)
-    barBg.bg = barBg:CreateTexture(nil, "BACKGROUND")
-    barBg.bg:SetAllPoints()
-    barBg.bg:SetColorTexture(0.1, 0.1, 0.1, 0.8)
-
-    local barFill = barBg:CreateTexture(nil, "ARTWORK")
-    barFill:SetPoint("LEFT")
-    barFill:SetHeight(16)
-    local progress = tier.maxSkill > 0 and (tier.skillLevel / tier.maxSkill) or 0
-    barFill:SetWidth(math.max(1, 200 * progress))
+    nameText:SetTextColor(T.C(T.palette.textPrimary))
 
     local isMaxed = tier.skillLevel >= tier.maxSkill
+
+    -- Modern progress bar (180px wide, 10px tall) in center area
+    local bar = T:CreateProgressBar(row, 180, 10)
+    bar:SetPoint("LEFT", 210, 0)
+    bar:SetProgress(tier.skillLevel, tier.maxSkill)
+
     if isMaxed then
-        barFill:SetColorTexture(0, 0.7, 0, 0.8)
+        bar:SetBarColor(T.C(T.palette.barMaxed))
+        bar.text:SetText(PP.COLORS.MAXED .. L["SKILL_MAXED"] .. "|r")
     else
-        barFill:SetColorTexture(0.8, 0.5, 0, 0.8)
+        bar:SetBarColor(T.C(T.palette.barIncomplete))
+        bar.text:SetText(string.format(L["SKILL_CURRENT"], tier.skillLevel, tier.maxSkill))
     end
 
-    -- Skill text overlay
-    local skillText = barBg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    skillText:SetPoint("CENTER")
-    if isMaxed then
-        skillText:SetText(PP.COLORS.MAXED .. L["SKILL_MAXED"] .. "|r")
-    else
-        skillText:SetText(string.format(L["SKILL_CURRENT"], tier.skillLevel, tier.maxSkill))
-    end
-
-    -- Calculate button (only for incomplete tiers)
+    -- For incomplete tiers: remaining points text + Calculate button on right
     if not isMaxed then
-        local calcBtn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        calcBtn:SetSize(90, 22)
+        -- Calculate button via Theme
+        local calcBtn = T:CreateButton(row, L["BTN_CALCULATE"], 90, 24, true)
         calcBtn:SetPoint("RIGHT", -8, 0)
-        calcBtn:SetText(L["BTN_CALCULATE"])
 
         if not hasRecipes then
             -- Disable the button and show a tooltip explaining why
-            calcBtn:Disable()
+            calcBtn:SetEnabled(false)
             calcBtn:SetScript("OnEnter", function(self)
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                 GameTooltip:AddLine(L["PATH_NEED_RECIPES"], 1, 0.5, 0)
@@ -227,12 +241,10 @@ function PP.ProfessionListUI:CreateTierRow(parent, yOffset, profID, categoryID, 
             end)
         else
             calcBtn:SetScript("OnClick", function()
-                -- Calculate path and switch to path tab
                 local path, totalCost = PP.PathOptimizer:CalculatePath(
                     profID, categoryID, tier.skillLevel, tier.maxSkill)
 
                 if #path == 0 then
-                    -- No path found - probably no skillable recipes at this level
                     PP.charDb.lastPath = {
                         profID = profID,
                         categoryID = categoryID,
@@ -255,7 +267,6 @@ function PP.ProfessionListUI:CreateTierRow(parent, yOffset, profID, categoryID, 
                     }
                 end
 
-                -- Switch to path tab in the correct context
                 if PP.AuctionHouseTab and PP.AuctionHouseTab:IsEmbeddedVisible() then
                     PP.AuctionHouseTab:SetEmbeddedTab("path")
                 else
@@ -264,12 +275,12 @@ function PP.ProfessionListUI:CreateTierRow(parent, yOffset, profID, categoryID, 
             end)
         end
 
-        -- Remaining points
+        -- Remaining points text between bar and button
         local remaining = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         remaining:SetPoint("RIGHT", calcBtn, "LEFT", -8, 0)
         remaining:SetText(PP.COLORS.INCOMPLETE ..
             string.format(L["SKILL_REMAINING"], tier.maxSkill - tier.skillLevel) .. "|r")
     end
 
-    return yOffset + 34
+    return yOffset + ROW_HEIGHT + 2
 end

@@ -5,6 +5,23 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-04-17
+
+### Changed
+- **Complete modern UI redesign**: Replaced all Blizzard standard templates with a custom Theme system. Every panel now uses a dark, flat, borderless design with a cyan accent color scheme.
+- **New Theme.lua module**: Shared UI component library providing styled windows, title bars, tab bars, buttons, progress bars, checkboxes (toggle switches), scroll areas with minimal scrollbars, section headers, and alternating-color list rows — all without Blizzard templates.
+- **MainFrame**: Modern frameless window with shadow, accent-colored title bar, pill-style tab navigation, and compact layout (720x540).
+- **AuctionHouseTab**: Floating panel beside the AH using Theme components. Dark card styling with the same tab system and layout as the main window.
+- **ProfessionList**: Custom filter toggle button, Theme-based section headers with accent bar, progress bars with maxed/incomplete coloring, and styled Calculate buttons.
+- **LevelingPath**: Compact 42px rows with difficulty color bars, 28x28 recipe icons, skill range sub-text, and rich hover tooltips showing full cost breakdown and material status.
+- **ShoppingList**: Column header bar with accent-colored labels, 26px material rows with item tooltips, color-coded Have/Buy/Total columns, and grand total in header.
+
+### Technical
+- All UI files rewritten to use `PP.Theme` helpers exclusively — no `UIPanelButtonTemplate`, `UIPanelScrollFrameTemplate`, or `UICheckButtonTemplate` usage.
+- Custom scrollbar implementation with thin 4px track and drag-proportional thumb.
+- Toggle-style checkboxes replacing standard WoW checkboxes.
+- Alternating row colors with hover highlight across all list views.
+
 ## [0.5.0] - 2026-04-17
 
 ### Changed
