@@ -27,7 +27,9 @@ function PP.AuctionHouseTab:OnAuctionHouseShow()
         self:CreatePanel()
     end
 
+    -- Ensure our tab is visible and properly styled as deselected
     ahTab:Show()
+    PanelTemplates_DeselectTab(ahTab)
 end
 
 --- Called when the AH window closes. Deactivates our tab.
@@ -41,16 +43,18 @@ end
 function PP.AuctionHouseTab:CreateTab()
     local L = PP.L
 
-    -- Count existing tabs
-    local numTabs = 0
-    while _G["AuctionHouseFrameTab" .. (numTabs + 1)] do
-        numTabs = numTabs + 1
+    -- Count existing tabs — prefer AuctionHouseFrame.numTabs, fall back to globals
+    local numTabs = AuctionHouseFrame.numTabs or 0
+    if numTabs == 0 then
+        while _G["AuctionHouseFrameTab" .. (numTabs + 1)] do
+            numTabs = numTabs + 1
+        end
     end
 
     ahTabIndex = numTabs + 1
     local tabName = "AuctionHouseFrameTab" .. ahTabIndex
 
-    -- Create the tab using the same template as built-in AH tabs
+    -- Create the tab using the standard panel tab template
     ahTab = CreateFrame("Button", tabName, AuctionHouseFrame, "PanelTabButtonTemplate")
     ahTab:SetID(ahTabIndex)
     ahTab:SetText(L["AH_TAB_TITLE"])
@@ -61,24 +65,28 @@ function PP.AuctionHouseTab:CreateTab()
     -- Position to the right of the last existing tab
     local lastTab = _G["AuctionHouseFrameTab" .. numTabs]
     if lastTab then
-        ahTab:SetPoint("LEFT", lastTab, "RIGHT", -14, 0)
+        ahTab:SetPoint("LEFT", lastTab, "RIGHT", -15, 0)
     else
         ahTab:SetPoint("BOTTOMLEFT", AuctionHouseFrame, "BOTTOMLEFT", 0, -30)
     end
 
-    PanelTemplates_TabResize(ahTab, 0)
+    -- Register with PanelTemplates for proper tab management and z-ordering
     PanelTemplates_SetNumTabs(AuctionHouseFrame, ahTabIndex)
+    if PanelTemplates_EnableTab then
+        PanelTemplates_EnableTab(AuctionHouseFrame, ahTabIndex)
+    end
+    PanelTemplates_TabResize(ahTab, 0)
+    PanelTemplates_DeselectTab(ahTab)
 
-    -- Hook each existing AH tab to deactivate ours when a default tab is clicked
-    for i = 1, numTabs do
-        local existingTab = _G["AuctionHouseFrameTab" .. i]
-        if existingTab then
-            existingTab:HookScript("OnClick", function()
-                if isTabActive then
-                    PP.AuctionHouseTab:Deactivate()
-                end
-            end)
-        end
+    -- Hook PanelTemplates_SetTab so our tab deactivates when any other tab is selected.
+    -- This is more robust than hooking individual tab OnClick handlers.
+    if not self._tabHooked then
+        hooksecurefunc("PanelTemplates_SetTab", function(frame, id)
+            if frame == AuctionHouseFrame and id ~= ahTabIndex and isTabActive then
+                PP.AuctionHouseTab:Deactivate()
+            end
+        end)
+        self._tabHooked = true
     end
 end
 

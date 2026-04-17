@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-04-17
+
+### Fixed
+- AH tab z-ordering: tabs now use `PanelTemplates_EnableTab` and `PanelTemplates_DeselectTab` for proper frame level management, fixing the tab appearing behind standard AH tabs.
+- Tab deactivation now hooks `PanelTemplates_SetTab` globally instead of individual tab OnClick handlers for more robust behavior.
+
 ## [0.3.0] - 2026-04-17
 
 ### Fixed
