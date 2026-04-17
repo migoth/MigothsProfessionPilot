@@ -43,48 +43,114 @@ function PP.AuctionHouseTab:OnAuctionHouseClosed()
         ahPanel:Hide()
     end
     isShown = false
+    UpdateTabVisual()
 end
 
 ------------------------------------------------------------------------
--- AH icon button (24x24 on the AH title bar)
+-- Vertical side-tab (right edge of AH frame)
 ------------------------------------------------------------------------
 
---- Creates a small shortcut button on the AH title bar.
+--- Creates a vertical side-tab on the right edge of the AH frame.
 function PP.AuctionHouseTab:CreateButton()
     local L = PP.L
     local T = PP.Theme
+    local C = T.C
+
+    local TAB_WIDTH  = 28
+    local TAB_HEIGHT = 90
+    local TAB_YOFF   = -135  -- below MCP tab if both addons loaded
 
     ahButton = CreateFrame("Button", "MigothsProfessionPilotAHButton", AuctionHouseFrame)
-    ahButton:SetSize(24, 24)
-    ahButton:SetPoint("TOPRIGHT", AuctionHouseFrame, "TOPRIGHT", -56, -4)
+    ahButton:SetSize(TAB_WIDTH, TAB_HEIGHT)
+    ahButton:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", -1, TAB_YOFF)
     ahButton:SetFrameStrata("HIGH")
 
-    -- Icon
+    -- Background
+    local bg = ahButton:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(C(T.palette.surface))
+    ahButton.bg = bg
+
+    -- Left border (connecting to AH frame)
+    local leftBorder = ahButton:CreateTexture(nil, "BORDER")
+    leftBorder:SetSize(1, TAB_HEIGHT)
+    leftBorder:SetPoint("TOPLEFT", 0, 0)
+    leftBorder:SetColorTexture(C(T.palette.border))
+
+    -- Right/top/bottom borders
+    local rightBorder = ahButton:CreateTexture(nil, "BORDER")
+    rightBorder:SetSize(1, TAB_HEIGHT)
+    rightBorder:SetPoint("TOPRIGHT", 0, 0)
+    rightBorder:SetColorTexture(C(T.palette.border))
+
+    local topBorder = ahButton:CreateTexture(nil, "BORDER")
+    topBorder:SetSize(TAB_WIDTH, 1)
+    topBorder:SetPoint("TOPLEFT", 0, 0)
+    topBorder:SetColorTexture(C(T.palette.border))
+
+    local bottomBorder = ahButton:CreateTexture(nil, "BORDER")
+    bottomBorder:SetSize(TAB_WIDTH, 1)
+    bottomBorder:SetPoint("BOTTOMLEFT", 0, 0)
+    bottomBorder:SetColorTexture(C(T.palette.border))
+
+    -- Accent stripe (thin cyan line at the very right edge)
+    local accent = ahButton:CreateTexture(nil, "ARTWORK")
+    accent:SetSize(2, TAB_HEIGHT - 2)
+    accent:SetPoint("RIGHT", -1, 0)
+    accent:SetColorTexture(C(T.palette.accentDim))
+    ahButton.accent = accent
+
+    -- Icon (centered upper area)
     local icon = ahButton:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
+    icon:SetSize(20, 20)
+    icon:SetPoint("TOP", 0, -10)
     icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     ahButton.icon = icon
 
-    -- Border highlight
-    local highlight = ahButton:CreateTexture(nil, "HIGHLIGHT")
-    highlight:SetAllPoints()
-    highlight:SetColorTexture(1, 1, 1, 0.15)
+    -- Vertical label "MPP"
+    local letters = { "M", "P", "P" }
+    for i, ch in ipairs(letters) do
+        local lbl = ahButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        lbl:SetPoint("TOP", 0, -34 - (i - 1) * 14)
+        lbl:SetText(ch)
+        lbl:SetTextColor(C(T.palette.textSecondary))
+    end
 
-    -- Tooltip
+    -- Hover / active states
     ahButton:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        if not isShown then
+            self.bg:SetColorTexture(C(T.palette.hover))
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine(L["AH_TAB_TITLE"])
         GameTooltip:AddLine(L["AH_BTN_TOOLTIP"], 1, 1, 1, true)
         GameTooltip:Show()
     end)
-    ahButton:SetScript("OnLeave", function()
+    ahButton:SetScript("OnLeave", function(self)
+        if not isShown then
+            self.bg:SetColorTexture(C(T.palette.surface))
+        end
         GameTooltip:Hide()
     end)
 
     ahButton:SetScript("OnClick", function()
         PP.AuctionHouseTab:TogglePanel()
     end)
+end
+
+--- Updates the side-tab appearance based on panel visibility.
+local function UpdateTabVisual()
+    if not ahButton then return end
+    local T = PP.Theme
+    local C = T.C
+    if isShown then
+        ahButton.bg:SetColorTexture(C(T.palette.tabActive))
+        ahButton.accent:SetColorTexture(C(T.palette.accent))
+    else
+        ahButton.bg:SetColorTexture(C(T.palette.surface))
+        ahButton.accent:SetColorTexture(C(T.palette.accentDim))
+    end
 end
 
 ------------------------------------------------------------------------
@@ -115,6 +181,7 @@ function PP.AuctionHouseTab:CreatePanel()
     local closeBtn = T:CreateCloseButton(titleBar, function()
         ahPanel:Hide()
         isShown = false
+        UpdateTabVisual()
     end)
     closeBtn:SetPoint("RIGHT", -4, 0)
 
@@ -254,6 +321,7 @@ function PP.AuctionHouseTab:TogglePanel()
         self:SetEmbeddedTab(ahPanel.activeTab or "professions")
         isShown = true
     end
+    UpdateTabVisual()
 end
 
 --- Returns true when the floating panel is currently shown.
