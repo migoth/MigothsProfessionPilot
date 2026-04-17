@@ -113,6 +113,7 @@ PP:RegisterLocale("deDE", {
     -- UI
     ["MAIN_TITLE"] = "MigothsProfessionPilot",
     ["AH_TAB_TITLE"] = "MigothsProfessionPilot",
+    ["AH_BTN_TOOLTIP"] = "Klicken, um das MigothsProfessionPilot-Panel zu oeffnen",
     ["TAB_PROFESSIONS"] = "Berufe",
     ["TAB_PATH"] = "Leveling-Pfad",
     ["TAB_SHOPPING"] = "Einkaufsliste",

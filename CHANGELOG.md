@@ -5,7 +5,14 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.4.0] - 2026-04-17
+
+### Changed
+- **AH integration reworked**: Replaced the AH tab (which overlaid the AH content) with a small icon button in the AH title bar. Clicking it opens MigothsProfessionPilot as a standalone floating panel next to the AH, so both windows are visible simultaneously. The panel is movable, has a close button, and auto-closes when the AH is closed.
+
+### Fixed
+- **Calculate Path button now works**: Fixed recipe lookup that was failing because recipe sub-category IDs didn't match expansion tier skill line IDs. The path optimizer now uses the full recipe cache, so all skillable recipes are considered for path calculation.
+- Calculate Path button now correctly switches to the path tab in the AH panel context instead of only working in the standalone window.
 
 ## [0.3.2] - 2026-04-17
 

@@ -501,21 +501,22 @@ end
 --- Returns all recipes that can give skill-ups at the given skill level.
 -- Excludes trivial (gray) recipes.
 -- @param profID number The profession ID
--- @param categoryID number|nil Optional tier/category filter
+-- @param categoryID number|nil Optional tier/category filter (unused - recipes
+--   always come from the global cache because recipe categoryIDs are
+--   sub-categories, not expansion skill line IDs)
 -- @return table Array of recipe data tables sorted by difficulty (orange first)
 function PP.ProfessionScanner:GetSkillableRecipes(profID, categoryID)
     local cache = professionCache[profID]
     if not cache then return {} end
 
     local results = {}
-    local recipeSource = cache.recipes
 
-    -- If filtering by category, use the tier's recipe list
-    if categoryID and cache.tiers[categoryID] then
-        recipeSource = cache.tiers[categoryID].recipes
-    end
-
-    for recipeID, recipe in pairs(recipeSource) do
+    -- Always iterate the global recipe cache.  Tier-specific recipe
+    -- lists are unreliable because recipe.categoryID (a sub-category
+    -- like "Armor") does not match the tier's key (an expansion skill
+    -- line ID).  Recipes that are trivial for the selected tier already
+    -- have skillUpChance == 0 and are filtered out below.
+    for recipeID, recipe in pairs(cache.recipes) do
         if not recipe.disabled and recipe.skillUpChance > 0 then
             table.insert(results, recipe)
         end

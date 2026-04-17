@@ -252,7 +252,13 @@ function PP.ProfessionListUI:CreateTierRow(parent, yOffset, profID, categoryID, 
                         totalCost = totalCost,
                     }
                 end
-                PP.MainFrame:SetActiveTab("path")
+
+                -- Switch to path tab in the correct context
+                if PP.AuctionHouseTab and PP.AuctionHouseTab:IsEmbeddedVisible() then
+                    PP.AuctionHouseTab:SetEmbeddedTab("path")
+                else
+                    PP.MainFrame:SetActiveTab("path")
+                end
             end)
         end
 

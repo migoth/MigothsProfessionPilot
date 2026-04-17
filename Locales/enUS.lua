@@ -114,6 +114,7 @@ L["COL_TOTAL"] = "Total"
 -- UI
 L["MAIN_TITLE"] = "MigothsProfessionPilot"
 L["AH_TAB_TITLE"] = "MigothsProfessionPilot"
+L["AH_BTN_TOOLTIP"] = "Click to open MigothsProfessionPilot panel"
 L["TAB_PROFESSIONS"] = "Professions"
 L["TAB_PATH"] = "Leveling Path"
 L["TAB_SHOPPING"] = "Shopping List"
