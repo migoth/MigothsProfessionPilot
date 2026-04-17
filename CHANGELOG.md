@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - **AH auto-scan removed**: The auction house is no longer scanned automatically
-  when opening the AH or logging in. Use `/pp scan` or the Scan button instead.
+  when opening the AH or logging in. Use `/mpp scan` or the Scan button instead.
   The "Auto Scan" setting checkbox has been removed from both settings panels.
 
 ### Added
@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (e.g. because you haven't learned enough recipes yet), the leveling path now
   shows a warning explaining that more recipes are needed instead of just stopping
   silently.
-- Debug output (`/pp debug`) now shows per-tier recipe counts and how many recipes
+- Debug output (`/mpp debug`) now shows per-tier recipe counts and how many recipes
   are untagged (no tier association).
 
 ## [0.7.2] - 2026-04-17
@@ -60,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   instead of having its own (outdated) matching logic.
 
 ### Added
-- `/pp debug` command prints detailed API diagnostics to chat:
+- `/mpp debug` command prints detailed API diagnostics to chat:
   - Character professions from `GetProfessions()`
   - All trade skill lines with parentProfessionID, professionID, names
   - Cached profession data with tier count and recipe count
@@ -222,7 +222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [0.1.0] - 2026-04-16
 
 ### Added
-- Core framework: event system, saved variables, slash commands (/pp, /migothsprofessionpilot).
+- Core framework: event system, saved variables, slash commands (/mpp, /migothsprofessionpilot).
 - Full i18n support with English (enUS) and German (deDE) locales.
 - Profession scanner: reads all professions, expansion skill tiers, known recipes, difficulty levels, and reagent data via C_TradeSkillUI.
 - Inventory scanner: tracks materials across bags, bank, and reagent bank.

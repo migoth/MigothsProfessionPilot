@@ -718,7 +718,7 @@ function PP.ProfessionScanner:FindCheapestAlternative(alternatives)
 end
 
 ------------------------------------------------------------------------
--- Diagnostics (for /pp debug)
+-- Diagnostics (for /mpp debug)
 ------------------------------------------------------------------------
 
 --- Prints detailed API diagnostic information to help debug tier detection.

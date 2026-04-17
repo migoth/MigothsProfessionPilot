@@ -6,15 +6,15 @@ local L = PP.L
 
 -- General
 L["ADDON_NAME"] = "Migoth's Profession Pilot"
-L["ADDON_LOADED"] = "Migoth's Profession Pilot v%s loaded. Type /pp for help."
+L["ADDON_LOADED"] = "Migoth's Profession Pilot v%s loaded. Type /mpp for help."
 L["SLASH_HELP"] = "Available commands:"
-L["SLASH_HELP_TOGGLE"] = "/pp - Toggle main window"
-L["SLASH_HELP_SCAN"] = "/pp scan - Start AH price scan"
-L["SLASH_HELP_LIST"] = "/pp list - Show shopping list"
-L["SLASH_HELP_RESET"] = "/pp reset - Reset all saved data"
-L["SLASH_HELP_HELP"] = "/pp help - Show this help"
+L["SLASH_HELP_TOGGLE"] = "/mpp - Toggle main window"
+L["SLASH_HELP_SCAN"] = "/mpp scan - Start AH price scan"
+L["SLASH_HELP_LIST"] = "/mpp list - Show shopping list"
+L["SLASH_HELP_RESET"] = "/mpp reset - Reset all saved data"
+L["SLASH_HELP_HELP"] = "/mpp help - Show this help"
 L["RESET_CONFIRM"] = "All data has been reset."
-L["RESET_PROMPT"] = "Type '/pp reset confirm' to reset all data. This cannot be undone."
+L["RESET_PROMPT"] = "Type '/mpp reset confirm' to reset all data. This cannot be undone."
 
 -- Professions
 L["PROF_ALCHEMY"] = "Alchemy"

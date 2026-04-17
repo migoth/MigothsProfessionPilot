@@ -38,7 +38,7 @@ A World of Warcraft addon that calculates the cheapest and fastest path to max o
 
 ## Usage
 
-- **Open the main window**: Click the minimap button or type `/pp` in chat.
+- **Open the main window**: Click the minimap button or type `/mpp` in chat.
 - **Select a profession**: Click on any profession in the list to see its leveling path.
 - **Scan prices**: Visit the auction house for up-to-date material costs.
 - **Follow the path**: Craft items in the suggested order for maximum efficiency.
@@ -48,11 +48,11 @@ A World of Warcraft addon that calculates the cheapest and fastest path to max o
 
 | Command | Description |
 |---------|-------------|
-| `/pp` | Toggle the main window |
-| `/pp scan` | Start a manual AH price scan (must be at AH) |
-| `/pp list` | Show the shopping list for current path |
-| `/pp reset` | Reset all saved data |
-| `/pp help` | Show available commands |
+| `/mpp` | Toggle the main window |
+| `/mpp scan` | Start a manual AH price scan (must be at AH) |
+| `/mpp list` | Show the shopping list for current path |
+| `/mpp reset` | Reset all saved data |
+| `/mpp help` | Show available commands |
 
 ## How It Works
 

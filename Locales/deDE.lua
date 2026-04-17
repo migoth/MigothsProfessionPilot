@@ -5,15 +5,15 @@ local ADDON_NAME, PP = ...
 
 PP:RegisterLocale("deDE", {
     -- General
-    ["ADDON_LOADED"] = "Migoth's Profession Pilot v%s geladen. Tippe /pp fuer Hilfe.",
+    ["ADDON_LOADED"] = "Migoth's Profession Pilot v%s geladen. Tippe /mpp fuer Hilfe.",
     ["SLASH_HELP"] = "Verfuegbare Befehle:",
-    ["SLASH_HELP_TOGGLE"] = "/pp - Hauptfenster umschalten",
-    ["SLASH_HELP_SCAN"] = "/pp scan - AH-Preisscan starten",
-    ["SLASH_HELP_LIST"] = "/pp list - Einkaufsliste anzeigen",
-    ["SLASH_HELP_RESET"] = "/pp reset - Alle gespeicherten Daten zuruecksetzen",
-    ["SLASH_HELP_HELP"] = "/pp help - Diese Hilfe anzeigen",
+    ["SLASH_HELP_TOGGLE"] = "/mpp - Hauptfenster umschalten",
+    ["SLASH_HELP_SCAN"] = "/mpp scan - AH-Preisscan starten",
+    ["SLASH_HELP_LIST"] = "/mpp list - Einkaufsliste anzeigen",
+    ["SLASH_HELP_RESET"] = "/mpp reset - Alle gespeicherten Daten zuruecksetzen",
+    ["SLASH_HELP_HELP"] = "/mpp help - Diese Hilfe anzeigen",
     ["RESET_CONFIRM"] = "Alle Daten wurden zurueckgesetzt.",
-    ["RESET_PROMPT"] = "Tippe '/pp reset confirm' um alle Daten zurueckzusetzen.",
+    ["RESET_PROMPT"] = "Tippe '/mpp reset confirm' um alle Daten zurueckzusetzen.",
 
     -- Professions
     ["PROF_ALCHEMY"] = "Alchemie",

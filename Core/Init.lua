@@ -46,7 +46,7 @@ local function OnAddonLoaded(self, event, addonName)
     PP.MainFrame:Init()
     PP.AuctionHouseTab:Init()
 
-    -- Inject AH tab when AH opens (no auto-scan; use /pp scan or the Scan button)
+    -- Inject AH tab when AH opens (no auto-scan; use /mpp scan or the Scan button)
     PP:RegisterEvent("AUCTION_HOUSE_SHOW", function(self)
         C_Timer.After(0, function()
             PP.AuctionHouseTab:OnAuctionHouseShow()
@@ -113,7 +113,7 @@ SlashCmdList["MIGOTHSPROFESSIONPILOT"] = function(msg)
         PP.Utils.Print(L["SLASH_HELP_LIST"])
         PP.Utils.Print(L["SLASH_HELP_RESET"])
         PP.Utils.Print(L["SLASH_HELP_HELP"])
-        PP.Utils.Print("  /pp debug - Print profession API diagnostics")
+        PP.Utils.Print("  /mpp debug - Print profession API diagnostics")
     elseif msg == "debug" then
         PP.ProfessionScanner:PrintDebugInfo()
     else
