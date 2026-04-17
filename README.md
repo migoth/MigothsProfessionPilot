@@ -16,9 +16,21 @@ A World of Warcraft addon that calculates the cheapest and fastest path to max o
 
 ## Installation
 
+### WoWUp (recommended)
+
+1. In WoWUp, go to **"Install from URL"**
+2. Enter: `https://github.com/migoth/MigothsProfessionPilot`
+3. Click Install
+
+> **Note:** WoWUp requires a GitHub Personal Access Token for GitHub-hosted addons.
+> Go to WoWUp **Options → GitHub Token** and paste a token with `public_repo` scope.
+> [Create a token here](https://github.com/settings/tokens/new?scopes=public_repo&description=WoWUp).
+
+### Manual Installation
+
 [![Download Latest](https://img.shields.io/github/v/release/migoth/MigothsProfessionPilot?label=Download&style=for-the-badge)](https://github.com/migoth/MigothsProfessionPilot/releases/latest/download/MigothsProfessionPilot.zip)
 
-1. Click the button above or download `MigothsProfessionPilot.zip` from the [Releases](../../releases) page.
+1. Download `MigothsProfessionPilot.zip` from the [Releases](../../releases) page.
 2. Extract the `MigothsProfessionPilot` folder into your WoW addons directory:
    - Windows: `World of Warcraft\_retail_\Interface\AddOns\`
    - macOS: `/Applications/World of Warcraft/_retail_/Interface/AddOns/`
