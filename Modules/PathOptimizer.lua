@@ -1,7 +1,11 @@
 -- PathOptimizer.lua
 -- Calculates the cheapest leveling path for a profession tier.
--- Uses a greedy algorithm: at each skill level, pick the recipe with
--- the lowest effective cost per guaranteed skill point.
+--
+-- Simulates skill progression point by point.  As skill increases,
+-- recipe difficulty degrades (orange -> yellow -> green -> gray),
+-- reducing the skill-up chance.  At each level the optimizer picks
+-- the cheapest recipe per expected skill point and switches when a
+-- better option appears at a difficulty transition.
 
 local ADDON_NAME, PP = ...
 
@@ -12,126 +16,201 @@ function PP.PathOptimizer:Init()
     -- Nothing to initialize; calculations are on-demand
 end
 
+------------------------------------------------------------------------
+-- Core: point-by-point simulation
+------------------------------------------------------------------------
+
 --- Calculates the optimal leveling path for a profession tier.
--- Groups recipes by difficulty tier and assigns each tier a skill range.
--- Orange recipes are used first (cheapest among them), then yellow, then green.
+-- Simulates gaining one skill point at a time, picking the cheapest
+-- recipe at each level and switching at difficulty transitions.
 -- @param profID number The profession ID
--- @param categoryID number|nil The expansion tier category ID (nil = all recipes)
+-- @param categoryID number|nil The expansion tier category ID
 -- @param currentSkill number Current skill level
 -- @param maxSkill number Target skill level
 -- @return table Array of path steps
 -- @return number totalCost Total net cost of the full path
 function PP.PathOptimizer:CalculatePath(profID, categoryID, currentSkill, maxSkill)
-    local skillableRecipes = PP.ProfessionScanner:GetSkillableRecipes(profID, categoryID)
-    if #skillableRecipes == 0 then return {}, 0 end
+    local allRecipes = PP.ProfessionScanner:GetSkillableRecipes(profID, categoryID)
+    if #allRecipes == 0 then return {}, 0 end
 
-    local includeSellback = PP.Database:GetSettings().includeSellback
-
-    -- Group recipes by difficulty and pick the cheapest in each tier
-    local bestByDifficulty = {}  -- difficulty -> {recipe, cost, sellback}
-    for _, recipe in ipairs(skillableRecipes) do
+    -- Pre-compute material cost for one craft of each usable recipe.
+    -- Uses AH prices (via FindCheapestAlternative) so the cost reflects
+    -- what the player would actually pay, independent of current inventory.
+    local recipes = {}  -- array of {data, materialCost}
+    for _, recipe in ipairs(allRecipes) do
         if not recipe.disabled and recipe.skillUpChance > 0 then
-            local score, materialCost, sellback = self:ScoreRecipe(recipe, currentSkill, maxSkill)
-            if score then
-                local diff = recipe.difficulty
-                if not bestByDifficulty[diff] or score < bestByDifficulty[diff].score then
-                    bestByDifficulty[diff] = {
-                        recipe = recipe,
-                        score = score,
-                        materialCost = materialCost,
-                        sellback = sellback,
-                    }
-                end
+            local cost = self:ComputeMaterialCost(recipe.reagents)
+            if cost and cost > 0 then
+                recipes[#recipes + 1] = {
+                    data = recipe,
+                    materialCost = cost,
+                }
             end
         end
     end
+    if #recipes == 0 then return {}, 0 end
 
-    -- Build path: one step per difficulty tier, ordered orange -> yellow -> green
+    -- Difficulty degradation rate: how many skill points before a recipe
+    -- drops one difficulty level (orange->yellow, yellow->green, etc.).
+    -- Scales with the tier's max skill so Classic (300) degrades slower
+    -- than modern tiers (75-100).
+    local diffRange = math.max(4, math.floor(maxSkill / 12))
+    local scanSkill = currentSkill
+
     local path = {}
     local totalCost = 0
-    local simulatedSkill = currentSkill
-    local diffOrder = { 0, 1, 2 }  -- optimal, medium, easy
+    local sim = currentSkill
 
-    for _, diff in ipairs(diffOrder) do
-        if simulatedSkill >= maxSkill then break end
+    while sim < maxSkill do
+        -- Find the cheapest recipe per expected skill point at this level
+        local bestEntry = self:FindBestRecipe(
+            recipes, sim, scanSkill, diffRange)
+        if not bestEntry then break end  -- no usable recipes left
 
-        local entry = bestByDifficulty[diff]
-        if entry then
-            local recipe = entry.recipe
-            local chance = recipe.skillUpChance
-            local pointsPerCraft = recipe.numSkillUps or 1
-            local remainingPoints = maxSkill - simulatedSkill
+        -- Use this recipe, accumulating crafts into a single step
+        local stepStart = sim
+        local stepCrafts = 0
+        local stepCost = 0
+        local startDiff = self:EstimateDifficulty(
+            bestEntry.data.difficulty, sim, scanSkill, diffRange)
 
-            -- Calculate crafts needed for the remaining skill points
-            local craftsForOnePoint = self:CraftsForOnePoint(chance)
-            local craftsNeeded = math.ceil(remainingPoints / pointsPerCraft) * craftsForOnePoint
-            local skillGain = remainingPoints
+        while sim < maxSkill do
+            local diff = self:EstimateDifficulty(
+                bestEntry.data.difficulty, sim, scanSkill, diffRange)
+            if diff >= 3 then break end  -- recipe went gray
 
-            -- Calculate costs
-            local batchMaterialCost = entry.materialCost * craftsNeeded
-            local batchSellback = includeSellback and (entry.sellback * craftsNeeded) or 0
-            local batchNetCost = batchMaterialCost - batchSellback
-            local costPerPoint = skillGain > 0 and (batchNetCost / skillGain) or 0
+            local chance = PP.Utils.GetSkillUpChance(diff)
+            if chance <= 0 then break end
 
+            -- Each successful craft gives numSkillUps points
+            local ups = math.min(
+                bestEntry.data.numSkillUps or 1, maxSkill - sim)
+            local crafts = self:CraftsForOnePoint(chance)
+
+            stepCrafts = stepCrafts + crafts
+            stepCost = stepCost + bestEntry.materialCost * crafts
+            sim = sim + ups
+
+            -- At difficulty transitions, check if a better recipe exists
+            if sim < maxSkill then
+                local newDiff = self:EstimateDifficulty(
+                    bestEntry.data.difficulty, sim, scanSkill, diffRange)
+                if newDiff ~= diff then
+                    local newBest = self:FindBestRecipe(
+                        recipes, sim, scanSkill, diffRange)
+                    if newBest
+                       and newBest.data.recipeID ~= bestEntry.data.recipeID
+                    then
+                        break  -- switch to better recipe
+                    end
+                end
+            end
+        end
+
+        if stepCrafts > 0 then
+            local pointsGained = sim - stepStart
+            -- End difficulty: what the recipe is at when we stop using it
+            local endDiff = self:EstimateDifficulty(
+                bestEntry.data.difficulty, sim - 1, scanSkill, diffRange)
             table.insert(path, {
-                recipeID = recipe.recipeID,
-                name = recipe.name,
-                icon = recipe.icon,
-                craftCount = craftsNeeded,
-                materialCost = batchMaterialCost,
-                sellback = batchSellback,
-                netCost = batchNetCost,
-                costPerPoint = costPerPoint,
-                skillFrom = simulatedSkill,
-                skillTo = simulatedSkill + skillGain,
-                difficulty = diff,
-                skillUpChance = chance,
-                reagents = recipe.reagents,
-                outputItemID = recipe.outputItemID,
+                recipeID      = bestEntry.data.recipeID,
+                name          = bestEntry.data.name,
+                icon          = bestEntry.data.icon,
+                craftCount    = stepCrafts,
+                materialCost  = stepCost,
+                sellback      = 0,
+                netCost       = stepCost,
+                costPerPoint  = pointsGained > 0
+                    and (stepCost / pointsGained) or 0,
+                skillFrom     = stepStart,
+                skillTo       = sim,
+                difficulty    = startDiff,
+                endDifficulty = endDiff,
+                skillUpChance = PP.Utils.GetSkillUpChance(startDiff),
+                reagents      = bestEntry.data.reagents,
+                outputItemID  = bestEntry.data.outputItemID,
             })
-
-            totalCost = totalCost + batchNetCost
-            simulatedSkill = simulatedSkill + skillGain
+            totalCost = totalCost + stepCost
+        else
+            break  -- no progress possible
         end
     end
 
     return path, totalCost
 end
 
---- Scores a recipe for the optimizer.
--- Lower score = better choice. Score = effective cost per expected skill point.
--- @param recipe table Recipe data from ProfessionScanner
--- @param currentSkill number Current skill level
--- @param maxSkill number Target skill level
--- @return number|nil score Cost per skill point (nil if recipe has no price data)
--- @return number materialCost Total material cost for one craft
--- @return number sellback Estimated sellback value for one craft
-function PP.PathOptimizer:ScoreRecipe(recipe, currentSkill, maxSkill)
-    -- Calculate material cost
-    local materialCost, _ = PP.InventoryScanner:CalculateNetCost(recipe.reagents, 1)
+------------------------------------------------------------------------
+-- Difficulty estimation
+------------------------------------------------------------------------
 
-    -- Calculate sellback value of crafted item
-    local sellback = 0
-    local includeSellback = PP.Database:GetSettings().includeSellback
-    if includeSellback and recipe.outputItemID then
-        local sellValue = PP.PriceSource:GetSellbackValue(recipe.outputItemID)
-        if sellValue then
-            local avgQuantity = (recipe.quantityMin + recipe.quantityMax) / 2
-            sellback = sellValue * avgQuantity
+--- Estimates a recipe's difficulty at a simulated skill level.
+-- Recipes degrade from their scanned difficulty as skill increases.
+-- Every `diffRange` skill points gained, the difficulty drops one
+-- level (e.g. orange -> yellow).
+-- @param scannedDiff number Difficulty at scan time (0-3)
+-- @param atSkill number Simulated skill level
+-- @param scanSkill number Skill level when recipes were scanned
+-- @param diffRange number Skill points per difficulty step
+-- @return number Estimated difficulty (0-3)
+function PP.PathOptimizer:EstimateDifficulty(scannedDiff, atSkill, scanSkill, diffRange)
+    local gained = math.max(0, atSkill - scanSkill)
+    local degradation = math.floor(gained / diffRange)
+    return math.min(3, scannedDiff + degradation)
+end
+
+------------------------------------------------------------------------
+-- Recipe evaluation
+------------------------------------------------------------------------
+
+--- Finds the cheapest recipe at a given simulated skill level.
+-- Cost is measured as material cost per expected skill point,
+-- accounting for the estimated difficulty (and thus skill-up chance).
+-- @param recipes table Array of {data, materialCost}
+-- @param atSkill number Simulated skill level
+-- @param scanSkill number Skill level when recipes were scanned
+-- @param diffRange number Skill points per difficulty step
+-- @return table|nil Best recipe entry {data, materialCost}
+function PP.PathOptimizer:FindBestRecipe(recipes, atSkill, scanSkill, diffRange)
+    local bestEntry = nil
+    local bestCPP = math.huge  -- cost per point
+
+    for _, entry in ipairs(recipes) do
+        local diff = self:EstimateDifficulty(
+            entry.data.difficulty, atSkill, scanSkill, diffRange)
+        if diff < 3 then
+            local chance = PP.Utils.GetSkillUpChance(diff)
+            if chance > 0 then
+                local ups = entry.data.numSkillUps or 1
+                local cpp = entry.materialCost / (chance * ups)
+                if cpp < bestCPP then
+                    bestCPP = cpp
+                    bestEntry = entry
+                end
+            end
         end
     end
 
-    -- Effective cost = material cost minus what we get back
-    local effectiveCost = materialCost - sellback
+    return bestEntry
+end
 
-    -- Expected skill points per craft
-    local expectedSkillUps = recipe.skillUpChance * (recipe.numSkillUps or 1)
-    if expectedSkillUps <= 0 then return nil, materialCost, sellback end
-
-    -- Cost per skill point
-    local costPerPoint = effectiveCost / expectedSkillUps
-
-    return costPerPoint, materialCost, sellback
+--- Computes the pure material cost of one craft from AH prices.
+-- Does NOT subtract inventory (the simulation needs the real market cost).
+-- @param reagents table Array of {itemID, quantity, isOptional, alternatives}
+-- @return number Total material cost in copper
+function PP.PathOptimizer:ComputeMaterialCost(reagents)
+    local total = 0
+    for _, reagent in ipairs(reagents) do
+        if not reagent.isOptional then
+            -- Use cheapest alternative if available
+            local _, price = PP.ProfessionScanner:FindCheapestAlternative(
+                reagent.alternatives)
+            if not price then
+                price = PP.PriceSource:GetPrice(reagent.itemID)
+            end
+            total = total + (price or 0) * reagent.quantity
+        end
+    end
+    return total
 end
 
 --- Returns the expected number of crafts needed for one guaranteed skill point.

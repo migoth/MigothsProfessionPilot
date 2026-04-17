@@ -74,6 +74,7 @@ PP:RegisterLocale("deDE", {
     ["PATH_SKILL_RANGE"] = "Fertigkeit %d -> %d",
     ["PATH_GUARANTEED"] = "Garantierter Fertigkeitspunkt",
     ["PATH_CHANCE"] = "~%.0f%% Chance pro Herstellung",
+    ["PATH_CHANCE_RANGE"] = "%s~%.0f%%|r -> %s~%.0f%%|r Chance pro Herstellung",
     ["PATH_CALCULATING"] = "Berechne optimalen Pfad...",
     ["PATH_NO_RECIPES"] = "Keine Rezepte fuer Fertigkeitspunkte auf dieser Stufe verfuegbar.",
     ["PATH_NEED_RECIPES"] = "Rezepte noch nicht gescannt",

@@ -215,10 +215,22 @@ function PP.LevelingPathUI:ShowStepTooltip(anchor, step)
 
     -- Difficulty + skill-up chance
     local diffColor = PP.Utils.GetDifficultyColor(step.difficulty)
-    if step.skillUpChance >= 1.0 then
-        GameTooltip:AddLine(diffColor .. L["PATH_GUARANTEED"] .. "|r")
+    local endDiff = step.endDifficulty or step.difficulty
+    if endDiff == step.difficulty then
+        -- Single difficulty for the whole step
+        if step.skillUpChance >= 1.0 then
+            GameTooltip:AddLine(diffColor .. L["PATH_GUARANTEED"] .. "|r")
+        else
+            GameTooltip:AddLine(diffColor .. string.format(L["PATH_CHANCE"], step.skillUpChance * 100) .. "|r")
+        end
     else
-        GameTooltip:AddLine(diffColor .. string.format(L["PATH_CHANCE"], step.skillUpChance * 100) .. "|r")
+        -- Difficulty changes during this step (e.g. orange -> yellow)
+        local startChance = step.skillUpChance
+        local endChance = PP.Utils.GetSkillUpChance(endDiff)
+        local endColor = PP.Utils.GetDifficultyColor(endDiff)
+        GameTooltip:AddLine(string.format(
+            L["PATH_CHANCE_RANGE"],
+            diffColor, startChance * 100, endColor, endChance * 100))
     end
 
     GameTooltip:AddLine(" ")

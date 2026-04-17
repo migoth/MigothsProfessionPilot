@@ -5,6 +5,25 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] - 2026-04-17
+
+### Changed
+- **Leveling path simulation rewrite**: The path optimizer now simulates skill
+  progression point by point instead of assuming a single recipe covers all
+  remaining skill points.
+  - Recipes degrade in difficulty as your skill increases (orange -> yellow ->
+    green -> gray), matching WoW's actual skill-up mechanics.
+  - The optimizer switches to cheaper recipes automatically when the current
+    recipe's difficulty drops and a better option is available.
+  - Multiple steps are generated showing exactly when to switch recipes and
+    how many crafts are needed at each stage.
+  - Craft counts account for reduced skill-up probability at yellow (~75%)
+    and green (~35%) difficulty levels.
+- Path cost calculation now uses pure AH market prices (not inventory-adjusted)
+  for accurate recipe comparison across the entire simulated path.
+- Tooltip shows difficulty range (e.g. "~100% -> ~75%") when a step spans
+  multiple difficulty transitions.
+
 ## [0.6.2] - 2026-04-17
 
 ### Fixed
