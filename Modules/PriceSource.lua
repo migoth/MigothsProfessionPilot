@@ -166,6 +166,7 @@ end
 -- Saves the cheapest price and advances the scan queue if active.
 -- @param itemID number The commodity item ID
 function PP.PriceSource:OnCommodityResults(itemID)
+    if not isScanning then return end
     if not itemID then return end
 
     local numResults = C_AuctionHouse.GetNumCommoditySearchResults(itemID)
@@ -176,12 +177,12 @@ function PP.PriceSource:OnCommodityResults(itemID)
                 minBuyout = firstResult.unitPrice,
                 lastScan = time(),
             }
-            if isScanning then itemsUpdated = itemsUpdated + 1 end
+            itemsUpdated = itemsUpdated + 1
         end
     end
 
     -- Advance to next material if this result matches what we're waiting for
-    if isScanning and itemID == scanExpectedID then
+    if itemID == scanExpectedID then
         C_Timer.After(0.1, function()
             if isScanning then PP.PriceSource:ScanNextMaterial() end
         end)
@@ -190,6 +191,8 @@ end
 
 --- Processes browse results (opportunistic: user browsing the AH).
 function PP.PriceSource:OnBrowseResults()
+    if not isScanning then return end
+
     local ok, results = pcall(C_AuctionHouse.GetBrowseResults)
     if not ok or not results then return end
 
