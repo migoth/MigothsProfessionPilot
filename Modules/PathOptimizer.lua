@@ -13,72 +13,71 @@ function PP.PathOptimizer:Init()
 end
 
 --- Calculates the optimal leveling path for a profession tier.
--- Steps from currentSkill to maxSkill, always choosing the cheapest option.
+-- Groups recipes by difficulty tier and assigns each tier a skill range.
+-- Orange recipes are used first (cheapest among them), then yellow, then green.
 -- @param profID number The profession ID
 -- @param categoryID number|nil The expansion tier category ID (nil = all recipes)
 -- @param currentSkill number Current skill level
 -- @param maxSkill number Target skill level
--- @return table Array of path steps: {recipeID, name, craftCount, cost, sellback, netCost, costPerPoint, skillRange, difficulty}
+-- @return table Array of path steps
 -- @return number totalCost Total net cost of the full path
 function PP.PathOptimizer:CalculatePath(profID, categoryID, currentSkill, maxSkill)
     local skillableRecipes = PP.ProfessionScanner:GetSkillableRecipes(profID, categoryID)
     if #skillableRecipes == 0 then return {}, 0 end
 
-    local path = {}
-    local totalCost = 0
-    local simulatedSkill = currentSkill
     local includeSellback = PP.Database:GetSettings().includeSellback
 
-    -- Greedy optimization: at each skill level, choose the cheapest recipe
-    local maxIterations = maxSkill * 3  -- Safety limit against infinite loops
-    local iterations = 0
-
-    while simulatedSkill < maxSkill and iterations < maxIterations do
-        iterations = iterations + 1
-
-        -- Find the best recipe at this skill level
-        local bestRecipe, bestScore = nil, math.huge
-        local bestCost, bestSellback, bestChance = 0, 0, 0
-
-        for _, recipe in ipairs(skillableRecipes) do
-            if not recipe.disabled and recipe.skillUpChance > 0 then
-                local score, materialCost, sellback = self:ScoreRecipe(recipe, simulatedSkill, maxSkill)
-                if score and score < bestScore then
-                    bestScore = score
-                    bestRecipe = recipe
-                    bestCost = materialCost
-                    bestSellback = sellback
-                    bestChance = recipe.skillUpChance
+    -- Group recipes by difficulty and pick the cheapest in each tier
+    local bestByDifficulty = {}  -- difficulty -> {recipe, cost, sellback}
+    for _, recipe in ipairs(skillableRecipes) do
+        if not recipe.disabled and recipe.skillUpChance > 0 then
+            local score, materialCost, sellback = self:ScoreRecipe(recipe, currentSkill, maxSkill)
+            if score then
+                local diff = recipe.difficulty
+                if not bestByDifficulty[diff] or score < bestByDifficulty[diff].score then
+                    bestByDifficulty[diff] = {
+                        recipe = recipe,
+                        score = score,
+                        materialCost = materialCost,
+                        sellback = sellback,
+                    }
                 end
             end
         end
+    end
 
-        -- No recipe found that gives skill-ups; stop
-        if not bestRecipe then break end
+    -- Build path: one step per difficulty tier, ordered orange -> yellow -> green
+    local path = {}
+    local totalCost = 0
+    local simulatedSkill = currentSkill
+    local diffOrder = { 0, 1, 2 }  -- optimal, medium, easy
 
-        -- Calculate how many crafts are needed for this recipe
-        -- before it becomes trivial or we reach the next breakpoint
-        local craftsForOnePoint = self:CraftsForOnePoint(bestRecipe.skillUpChance)
-        local pointsFromRecipe = bestRecipe.numSkillUps or 1
+    for _, diff in ipairs(diffOrder) do
+        if simulatedSkill >= maxSkill then break end
+
+        local entry = bestByDifficulty[diff]
+        if not entry then goto continue_diff end
+
+        local recipe = entry.recipe
+        local chance = recipe.skillUpChance
+        local pointsPerCraft = recipe.numSkillUps or 1
         local remainingPoints = maxSkill - simulatedSkill
 
-        -- Craft enough to get skill-ups, but re-evaluate recipe choice regularly
-        -- We batch up to 5 skill points per step to avoid excessive path entries
-        local targetPoints = math.min(remainingPoints, 5)
-        local craftsNeeded = math.ceil(targetPoints / pointsFromRecipe) * craftsForOnePoint
+        -- Calculate crafts needed for the remaining skill points
+        local craftsForOnePoint = self:CraftsForOnePoint(chance)
+        local craftsNeeded = math.ceil(remainingPoints / pointsPerCraft) * craftsForOnePoint
+        local skillGain = remainingPoints
 
-        -- Calculate costs for this batch
-        local batchMaterialCost = bestCost * craftsNeeded
-        local batchSellback = includeSellback and (bestSellback * craftsNeeded) or 0
+        -- Calculate costs
+        local batchMaterialCost = entry.materialCost * craftsNeeded
+        local batchSellback = includeSellback and (entry.sellback * craftsNeeded) or 0
         local batchNetCost = batchMaterialCost - batchSellback
-        local skillGain = math.min(targetPoints, remainingPoints)
         local costPerPoint = skillGain > 0 and (batchNetCost / skillGain) or 0
 
-        -- Add step to the path
         table.insert(path, {
-            recipeID = bestRecipe.recipeID,
-            name = bestRecipe.name,
-            icon = bestRecipe.icon,
+            recipeID = recipe.recipeID,
+            name = recipe.name,
+            icon = recipe.icon,
             craftCount = craftsNeeded,
             materialCost = batchMaterialCost,
             sellback = batchSellback,
@@ -86,20 +85,16 @@ function PP.PathOptimizer:CalculatePath(profID, categoryID, currentSkill, maxSki
             costPerPoint = costPerPoint,
             skillFrom = simulatedSkill,
             skillTo = simulatedSkill + skillGain,
-            difficulty = bestRecipe.difficulty,
-            skillUpChance = bestChance,
-            reagents = bestRecipe.reagents,
-            outputItemID = bestRecipe.outputItemID,
+            difficulty = diff,
+            skillUpChance = chance,
+            reagents = recipe.reagents,
+            outputItemID = recipe.outputItemID,
         })
 
         totalCost = totalCost + batchNetCost
         simulatedSkill = simulatedSkill + skillGain
 
-        -- Re-evaluate available recipes at the new skill level
-        -- (some recipes may have changed difficulty)
-        -- In a real scenario, difficulty changes as skill increases,
-        -- but we can't simulate that without knowing the exact thresholds.
-        -- The greedy approach re-evaluates each iteration.
+        ::continue_diff::
     end
 
     return path, totalCost

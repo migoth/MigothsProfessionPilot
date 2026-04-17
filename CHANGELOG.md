@@ -5,6 +5,21 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-04-17
+
+### Changed
+- **Simplified leveling path UI**: Compact single-line rows with difficulty color bar, recipe icon, craft instruction, and net cost. Full cost breakdown and material list moved to hover tooltip.
+- **Improved path optimizer**: Produces one consolidated step per difficulty tier instead of many repeated 5-point chunks of the same recipe.
+- **Better cost display**: Negative costs (profitable recipes) now show as green "Profit" instead of confusing negative numbers. Both the total header and individual step rows use this treatment.
+
+### Added
+- **Item tooltips on shopping list**: Hovering a material row now shows the WoW item tooltip (quality, type, item level, etc.).
+- **Crafted item info in path tooltip**: Hovering a path step shows what item is produced.
+- Gathering professions (Mining, Herbalism, Skinning) are now excluded from the profession list and path calculations since they're leveled by gathering, not crafting.
+
+### Fixed
+- Replaced Unicode arrow character in skill range display with ASCII to prevent broken glyphs in WoW.
+
 ## [0.4.0] - 2026-04-17
 
 ### Changed

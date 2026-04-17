@@ -79,8 +79,12 @@ function PP.ProfessionListUI:RefreshPanel(panel)
         return
     end
 
-    -- Display each profession and its tiers
+    -- Display each profession and its tiers (skip gathering professions)
     for profID, profData in pairs(professions) do
+        if PP.GATHERING_PROFESSION_IDS[profID] then
+            -- Skip gathering professions (Mining, Herbalism, Skinning)
+            goto continue_prof
+        end
         -- Profession header
         local header = CreateFrame("Frame", nil, scrollChild)
         header:SetSize(scrollChild:GetWidth(), 28)
@@ -142,6 +146,7 @@ function PP.ProfessionListUI:RefreshPanel(panel)
         end
 
         yOffset = yOffset + 8  -- Spacing between professions
+        ::continue_prof::
     end
 
     scrollChild:SetHeight(yOffset)

@@ -168,13 +168,17 @@ function PP.ShoppingListUI:CreateMaterialRow(parent, yOffset, mat, index)
     row.bg:SetAllPoints()
     row.bg:SetColorTexture(index % 2 == 0 and 0.1 or 0.07, index % 2 == 0 and 0.1 or 0.07, 0.12, 0.5)
 
-    -- Highlight on hover
+    -- Highlight on hover + item tooltip
     row:EnableMouse(true)
     row:SetScript("OnEnter", function(self)
         self.bg:SetColorTexture(0.2, 0.2, 0.3, 0.6)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetItemByID(mat.itemID)
+        GameTooltip:Show()
     end)
     row:SetScript("OnLeave", function(self)
         self.bg:SetColorTexture(index % 2 == 0 and 0.1 or 0.07, index % 2 == 0 and 0.1 or 0.07, 0.12, 0.5)
+        GameTooltip:Hide()
     end)
 
     -- Material name

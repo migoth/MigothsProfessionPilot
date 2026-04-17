@@ -3,7 +3,7 @@
 
 local ADDON_NAME, PP = ...
 
-PP.VERSION = "0.3.2"
+PP.VERSION = "0.5.0"
 
 -- Auction house cut (5%)
 PP.AH_CUT = 0.05
@@ -60,6 +60,14 @@ PP.EXPANSIONS = {
     { id = "df",        name = "XPAC_DF",         maxSkill = 100 },
     { id = "tww",       name = "XPAC_TWW",        maxSkill = 100 },
     { id = "midnight",  name = "XPAC_MIDNIGHT",   maxSkill = 100 },
+}
+
+-- Gathering professions - excluded from leveling path calculations
+-- (skilled by gathering, not by crafting)
+PP.GATHERING_PROFESSION_IDS = {
+    [182] = true,   -- Herbalism
+    [186] = true,   -- Mining
+    [393] = true,   -- Skinning
 }
 
 -- Crafting profession skill line IDs (base IDs)
