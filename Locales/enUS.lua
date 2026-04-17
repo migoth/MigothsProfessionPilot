@@ -61,7 +61,9 @@ L["DIFFICULTY_HEADER"] = "Difficulty"
 
 -- Path optimizer
 L["PATH_TITLE"] = "Leveling Path"
-L["PATH_EMPTY"] = "No leveling path available. Open a profession window first."
+L["PATH_EMPTY"] = "No leveling path calculated yet. Select a profession tier and click 'Calculate Path'."
+L["PROF_EMPTY"] = "No professions detected. Log in to your character and wait a moment."
+L["PROF_HINT_RECIPES"] = "Open the profession window once to scan recipes for path calculation."
 L["PATH_STEP"] = "Step %d"
 L["PATH_CRAFT"] = "Craft %dx %s"
 L["PATH_COST"] = "Cost: %s"

@@ -72,8 +72,8 @@ function PP.ProfessionListUI:RefreshPanel(panel)
 
     if not hasData then
         local hint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        hint:SetPoint("CENTER")
-        hint:SetText(L["PATH_EMPTY"])
+        hint:SetPoint("CENTER", 0, 10)
+        hint:SetText(L["PROF_EMPTY"])
         hint:SetTextColor(0.5, 0.5, 0.5)
         scrollChild:SetHeight(100)
         return
@@ -115,6 +115,15 @@ function PP.ProfessionListUI:RefreshPanel(panel)
         end
 
         yOffset = yOffset + 8  -- Spacing between professions
+
+        -- Show hint if no recipes are cached for this profession
+        local hasRecipes = profData.recipes and next(profData.recipes)
+        if not hasRecipes then
+            local recipeHint = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            recipeHint:SetPoint("TOPLEFT", 16, -yOffset)
+            recipeHint:SetText(PP.COLORS.NEUTRAL .. L["PROF_HINT_RECIPES"] .. "|r")
+            yOffset = yOffset + 16
+        end
     end
 
     scrollChild:SetHeight(yOffset)

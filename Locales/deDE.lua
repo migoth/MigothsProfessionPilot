@@ -60,7 +60,9 @@ PP:RegisterLocale("deDE", {
 
     -- Path optimizer
     ["PATH_TITLE"] = "Leveling-Pfad",
-    ["PATH_EMPTY"] = "Kein Leveling-Pfad verfuegbar. Oeffne zuerst ein Berufsfenster.",
+    ["PATH_EMPTY"] = "Noch kein Leveling-Pfad berechnet. Waehle eine Berufsstufe und klicke 'Pfad berechnen'.",
+    ["PROF_EMPTY"] = "Keine Berufe erkannt. Logge dich ein und warte einen Moment.",
+    ["PROF_HINT_RECIPES"] = "Oeffne das Berufsfenster einmal, um Rezepte fuer die Pfadberechnung zu scannen.",
     ["PATH_STEP"] = "Schritt %d",
     ["PATH_CRAFT"] = "Stelle %dx %s her",
     ["PATH_COST"] = "Kosten: %s",

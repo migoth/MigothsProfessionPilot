@@ -69,6 +69,11 @@ local function OnAddonLoaded(self, event, addonName)
         PP.ProfessionScanner:ScanCurrentProfession()
     end)
 
+    -- Re-detect professions when skill lines change (e.g. learning a new profession)
+    PP:RegisterEvent("SKILL_LINES_CHANGED", function(self)
+        PP.ProfessionScanner:ScanAllProfessions()
+    end)
+
     -- Rescan inventory on bag changes
     PP:RegisterEvent("BAG_UPDATE", function(self)
         PP.InventoryScanner:ScanBags()
