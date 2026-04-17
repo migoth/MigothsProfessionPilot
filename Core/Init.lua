@@ -35,16 +35,22 @@ local function OnAddonLoaded(self, event, addonName)
     PP:InitLocalization()
     PP.Database:Init()
 
-    -- Initialize modules
-    PP.ProfessionScanner:Init()
-    PP.InventoryScanner:Init()
-    PP.PriceSource:Init()
-    PP.PathOptimizer:Init()
-
-    -- Initialize UI
-    PP.MinimapButton:Init()
-    PP.MainFrame:Init()
-    PP.AuctionHouseTab:Init()
+    -- Initialize all modules (pcall each so one failure does not break everything)
+    local modules = {
+        { "ProfessionScanner", PP.ProfessionScanner },
+        { "InventoryScanner",  PP.InventoryScanner },
+        { "PriceSource",       PP.PriceSource },
+        { "PathOptimizer",     PP.PathOptimizer },
+        { "MinimapButton",     PP.MinimapButton },
+        { "MainFrame",         PP.MainFrame },
+        { "AuctionHouseTab",   PP.AuctionHouseTab },
+    }
+    for _, m in ipairs(modules) do
+        local ok, err = pcall(function() m[2]:Init() end)
+        if not ok then
+            PP.Utils.Print("|cffff4444" .. m[1] .. ":Init() error: " .. tostring(err) .. "|r")
+        end
+    end
 
     -- Inject AH tab when AH opens (no auto-scan; use /mpp scan or the Scan button)
     PP:RegisterEvent("AUCTION_HOUSE_SHOW", function(self)

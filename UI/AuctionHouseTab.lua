@@ -10,6 +10,16 @@ local ahButton = nil        -- Blizzard-style tab at bottom of AH frame
 local ahPanel  = nil        -- The floating panel
 local isShown  = false       -- Whether our panel is currently visible
 
+--- Updates the button appearance based on panel visibility.
+local function UpdateTabVisual()
+    if not ahButton then return end
+    if isShown then
+        ahButton:SetBackdropBorderColor(0.8, 0.6, 0.0, 1)
+    else
+        ahButton:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
+    end
+end
+
 ------------------------------------------------------------------------
 -- Init
 ------------------------------------------------------------------------
@@ -28,12 +38,19 @@ end
 function PP.AuctionHouseTab:OnAuctionHouseShow()
     if not AuctionHouseFrame then return end
 
+    -- Always create the button first, independently of the panel
     if not ahButton then
         self:CreateButton()
-        self:CreatePanel()
     end
-
     ahButton:Show()
+
+    -- Create the panel separately (errors here must not hide the button)
+    if not ahPanel then
+        local ok, err = pcall(function() self:CreatePanel() end)
+        if not ok then
+            PP.Utils.Print("|cffff4444AH panel error: " .. tostring(err) .. "|r")
+        end
+    end
 end
 
 --- Called when the AH window closes. Hides our panel.
@@ -115,16 +132,6 @@ function PP.AuctionHouseTab:CreateButton()
                 end
             end)
         end
-    end
-end
-
---- Updates the button appearance based on panel visibility.
-local function UpdateTabVisual()
-    if not ahButton then return end
-    if isShown then
-        ahButton:SetBackdropBorderColor(0.8, 0.6, 0.0, 1)
-    else
-        ahButton:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
     end
 end
 

@@ -5,6 +5,13 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.9] - 2026-04-17
+
+### Fixed
+- **AH tab error on close**: Fixed a Lua scoping bug where `UpdateTabVisual()` was called before being declared as a local function, causing `attempt to call global 'UpdateTabVisual' (a nil value)` every time the Auction House was closed. The function definition is now placed before its first use.
+- **AH button robustness**: Button creation is now independent of panel creation. If the panel fails to build, the AH icon button still appears and the error is shown in chat.
+- **Module init isolation**: Each module's `Init()` call is now wrapped in `pcall` so a failure in one module cannot prevent the AH event handlers from being registered.
+
 ## [0.7.8] - 2026-04-17
 
 ### Fixed

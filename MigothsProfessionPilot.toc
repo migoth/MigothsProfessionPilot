@@ -3,7 +3,7 @@
 ## Notes: Calculates the cheapest and fastest path to max out your professions across all expansions.
 ## Notes-deDE: Berechnet den günstigsten und schnellsten Weg, um deine Berufe in allen Erweiterungen zu maximieren.
 ## Author: migoth
-## Version: 0.7.8
+## Version: 0.7.9
 ## SavedVariables: MigothsProfessionPilotDB
 ## SavedVariablesPerCharacter: MigothsProfessionPilotCharDB
 ## IconTexture: Interface\Icons\INV_Misc_Book_09
