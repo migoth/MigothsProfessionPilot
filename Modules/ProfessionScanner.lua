@@ -135,107 +135,155 @@ function PP.ProfessionScanner:ScanProfessionByIndex(profIndex)
 end
 
 --- Scans expansion-specific skill tiers for a given profession.
--- Uses C_TradeSkillUI APIs that work outside the trade skill frame.
---
--- IMPORTANT: profID is a skill line ID (e.g. 171 for Alchemy) from
--- GetProfessionInfo(). However, ProfessionInfo.parentProfessionID
--- returned by GetProfessionInfoBySkillLineID() uses Enum.Profession
--- values (e.g. 3 for Alchemy). We resolve the enum value first so
--- the comparison works.
+-- Groups all trade skill lines by parentProfessionID, then matches
+-- the correct group to our profession using multiple fallback strategies:
+--   1) parentProfessionID matches profID directly
+--   2) profID appears as a child line in a group
+--   3) Enum resolution: GetProfessionInfoBySkillLineID(profID) gives
+--      a professionID that matches a parentProfessionID
+--   4) Name matching: a child's professionName contains our profession name
+--      (case-insensitive substring match)
 -- @param profID number The base profession skill line ID
 function PP.ProfessionScanner:ScanExpansionTiers(profID)
     local cache = professionCache[profID]
     if not cache then return end
 
-    -- Resolve the Enum.Profession value for this skill line.
-    local enumID = nil
-    if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
-        local baseInfo = C_TradeSkillUI.GetProfessionInfoBySkillLineID(profID)
-        if baseInfo then
-            enumID = baseInfo.professionID or baseInfo.parentProfessionID
-            -- Store the mapping so ScanCurrentProfession can find the cache key
-            if enumID and enumID ~= profID then
-                enumToSkillLine[enumID] = profID
+    if not (C_TradeSkillUI.GetAllProfTradeSkillLines
+            and C_TradeSkillUI.GetProfessionInfoBySkillLineID) then
+        return
+    end
+
+    local allLines = C_TradeSkillUI.GetAllProfTradeSkillLines()
+    if not allLines or #allLines == 0 then return end
+
+    -- Step 1: Collect info for every skill line and group by parentProfessionID
+    local lineInfos = {}   -- lineID -> ProfessionInfo
+    local groups = {}      -- parentProfID -> { lineID -> ProfessionInfo }
+
+    for _, lineID in ipairs(allLines) do
+        local ok, info = pcall(
+            C_TradeSkillUI.GetProfessionInfoBySkillLineID, lineID)
+        if ok and info then
+            lineInfos[lineID] = info
+            local parent = info.parentProfessionID
+            if parent then
+                if not groups[parent] then groups[parent] = {} end
+                groups[parent][lineID] = info
             end
         end
     end
 
-    -- Helper: does this child belong to our profession?
-    -- Checks three things in order:
-    --   1) parentProfessionID matches the skill line ID directly
-    --   2) parentProfessionID matches the resolved Enum.Profession value
-    --   3) professionName matches our cached profession name (fallback)
-    local profName = cache.name
-    local function IsMatch(info)
-        if not info then return false end
-        if info.parentProfessionID then
-            if info.parentProfessionID == profID then return true end
-            if enumID and info.parentProfessionID == enumID then return true end
-        end
-        -- Name-based fallback: compare base profession name
-        if profName and info.professionName and info.professionName == profName then
-            return true
-        end
-        return false
+    -- Step 2: Find which group belongs to our profession
+    local myGroup = nil
+    local myEnum = nil
+
+    -- Strategy A: profID is itself a parentProfessionID
+    if not myGroup and groups[profID] then
+        myGroup = groups[profID]
+        myEnum = profID
     end
 
-    -- Method 1: GetAllProfTradeSkillLines + GetProfessionInfoBySkillLineID
-    if C_TradeSkillUI.GetAllProfTradeSkillLines then
-        local allLines = C_TradeSkillUI.GetAllProfTradeSkillLines()
-        if allLines then
-            for _, childLineID in ipairs(allLines) do
-                if childLineID ~= profID
-                   and C_TradeSkillUI.GetProfessionInfoBySkillLineID
-                then
-                    local info = C_TradeSkillUI.GetProfessionInfoBySkillLineID(childLineID)
-                    if IsMatch(info) then
-                        -- Store reverse mapping for any newly discovered enum
-                        if info.parentProfessionID
-                           and info.parentProfessionID ~= profID
-                        then
-                            enumToSkillLine[info.parentProfessionID] = profID
-                            enumID = info.parentProfessionID
-                        end
-                        cache.tiers[childLineID] = {
-                            categoryID = childLineID,
-                            name = info.professionName or info.expansionName or "Unknown",
-                            skillLevel = info.skillLevel or 0,
-                            maxSkill = info.maxSkillLevel or 0,
-                            recipes = cache.tiers[childLineID]
-                                and cache.tiers[childLineID].recipes or {},
-                        }
-                    end
+    -- Strategy B: Resolve our enum via GetProfessionInfoBySkillLineID
+    if not myGroup then
+        local baseInfo = lineInfos[profID]
+        if not baseInfo then
+            local ok
+            ok, baseInfo = pcall(
+                C_TradeSkillUI.GetProfessionInfoBySkillLineID, profID)
+            if not ok then baseInfo = nil end
+        end
+        if baseInfo then
+            -- Try every numeric field that could be the enum value
+            for _, candidate in ipairs({
+                baseInfo.professionID,
+                baseInfo.parentProfessionID,
+            }) do
+                if candidate and groups[candidate] then
+                    myGroup = groups[candidate]
+                    myEnum = candidate
+                    break
                 end
             end
+        end
+    end
+
+    -- Strategy C: profID appears as one of the child line IDs
+    if not myGroup then
+        for parentID, children in pairs(groups) do
+            if children[profID] then
+                myGroup = children
+                myEnum = parentID
+                break
+            end
+        end
+    end
+
+    -- Strategy D: Name matching (case-insensitive substring)
+    if not myGroup and cache.name then
+        local myNameLower = cache.name:lower()
+        for parentID, children in pairs(groups) do
+            for _, info in pairs(children) do
+                local cName = (info.professionName or ""):lower()
+                local eName = (info.expansionName or ""):lower()
+                if (cName ~= "" and (cName == myNameLower
+                        or myNameLower:find(cName, 1, true)
+                        or cName:find(myNameLower, 1, true)))
+                    or (eName ~= "" and (eName == myNameLower
+                        or myNameLower:find(eName, 1, true)
+                        or eName:find(myNameLower, 1, true)))
+                then
+                    myGroup = children
+                    myEnum = parentID
+                    break
+                end
+            end
+            if myGroup then break end
+        end
+    end
+
+    -- Step 3: Add all children from the matched group as tiers
+    if myGroup then
+        if myEnum and myEnum ~= profID then
+            enumToSkillLine[myEnum] = profID
+        end
+
+        for lineID, info in pairs(myGroup) do
+            -- Use expansionName first (e.g. "Classic Alchemy") so each
+            -- tier has a distinct label; fall back to professionName.
+            cache.tiers[lineID] = {
+                categoryID = lineID,
+                name = info.expansionName or info.professionName or "Unknown",
+                skillLevel = info.skillLevel or 0,
+                maxSkill = info.maxSkillLevel or 0,
+                recipes = cache.tiers[lineID]
+                    and cache.tiers[lineID].recipes or {},
+            }
         end
     end
 
     -- Method 2: GetChildProfessionInfos (alternative/newer API)
     if not next(cache.tiers) and C_TradeSkillUI.GetChildProfessionInfos then
-        local children = C_TradeSkillUI.GetChildProfessionInfos()
-        if children then
+        local ok, children = pcall(C_TradeSkillUI.GetChildProfessionInfos)
+        if ok and children then
             for _, childInfo in ipairs(children) do
-                if IsMatch(childInfo) then
-                    local id = childInfo.professionID or childInfo.skillLineID
-                    if id then
-                        cache.tiers[id] = {
-                            categoryID = id,
-                            name = childInfo.professionName
-                                or childInfo.expansionName or "Unknown",
-                            skillLevel = childInfo.skillLevel or 0,
-                            maxSkill = childInfo.maxSkillLevel or 0,
-                            recipes = cache.tiers[id]
-                                and cache.tiers[id].recipes or {},
-                        }
-                    end
+                local id = childInfo.professionID or childInfo.skillLineID
+                if id then
+                    cache.tiers[id] = {
+                        categoryID = id,
+                        name = childInfo.expansionName
+                            or childInfo.professionName or "Unknown",
+                        skillLevel = childInfo.skillLevel or 0,
+                        maxSkill = childInfo.maxSkillLevel or 0,
+                        recipes = cache.tiers[id]
+                            and cache.tiers[id].recipes or {},
+                    }
                 end
             end
         end
     end
 
-    -- If real expansion tiers were found, remove the fallback single-tier
-    -- entry (which has key == profID) so it doesn't show alongside the
-    -- real tiers in the UI.
+    -- Clean up: if real expansion tiers were found, remove the fallback
+    -- single-tier entry (which has key == profID)
     if cache.tiers[profID] then
         local hasRealTiers = false
         for tierID, _ in pairs(cache.tiers) do
@@ -422,73 +470,9 @@ end
 -- (the detailed frame variant) to get accurate per-expansion skill levels.
 -- @param profID number The base profession ID (skill line ID)
 function PP.ProfessionScanner:ScanTiersFromOpenWindow(profID)
-    local cache = professionCache[profID]
-    if not cache then return end
-
-    -- Resolve enum ID for matching (same as ScanExpansionTiers)
-    local enumID = nil
-    if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
-        local baseInfo = C_TradeSkillUI.GetProfessionInfoBySkillLineID(profID)
-        if baseInfo then
-            enumID = baseInfo.professionID or baseInfo.parentProfessionID
-        end
-    end
-
-    local profName = cache.name
-    local function IsMatch(info)
-        if not info then return false end
-        if info.parentProfessionID then
-            if info.parentProfessionID == profID then return true end
-            if enumID and info.parentProfessionID == enumID then return true end
-        end
-        if profName and info.professionName and info.professionName == profName then
-            return true
-        end
-        return false
-    end
-
-    if C_TradeSkillUI.GetAllProfTradeSkillLines then
-        local allLines = C_TradeSkillUI.GetAllProfTradeSkillLines()
-        if allLines then
-            for _, lineID in ipairs(allLines) do
-                if lineID ~= profID
-                   and C_TradeSkillUI.GetProfessionInfoBySkillLineID
-                then
-                    local info = C_TradeSkillUI.GetProfessionInfoBySkillLineID(lineID)
-                    if IsMatch(info) then
-                        if info.parentProfessionID
-                           and info.parentProfessionID ~= profID
-                        then
-                            enumToSkillLine[info.parentProfessionID] = profID
-                        end
-                        local existing = cache.tiers[lineID]
-                        cache.tiers[lineID] = {
-                            categoryID = lineID,
-                            name = info.professionName or info.expansionName
-                                or (existing and existing.name) or "Unknown",
-                            skillLevel = info.skillLevel or 0,
-                            maxSkill = info.maxSkillLevel or 0,
-                            recipes = existing and existing.recipes or {},
-                        }
-                    end
-                end
-            end
-        end
-    end
-
-    -- Clean up fallback tier if real tiers now exist
-    if cache.tiers[profID] then
-        local hasRealTiers = false
-        for tierID, _ in pairs(cache.tiers) do
-            if tierID ~= profID then
-                hasRealTiers = true
-                break
-            end
-        end
-        if hasRealTiers then
-            cache.tiers[profID] = nil
-        end
-    end
+    -- Delegate to the same robust implementation used at login.
+    -- While the window is open the API should return even more accurate data.
+    self:ScanExpansionTiers(profID)
 end
 
 ------------------------------------------------------------------------
@@ -669,4 +653,80 @@ function PP.ProfessionScanner:FindCheapestAlternative(alternatives)
         end
     end
     return cheapestID, cheapestPrice
+end
+
+------------------------------------------------------------------------
+-- Diagnostics (for /pp debug)
+------------------------------------------------------------------------
+
+--- Prints detailed API diagnostic information to help debug tier detection.
+function PP.ProfessionScanner:PrintDebugInfo()
+    local P = PP.Utils.Print
+
+    P("--- MigothsProfessionPilot Debug ---")
+
+    -- Character professions
+    local prof1, prof2, _, fishing, cooking = GetProfessions()
+    P("GetProfessions: " .. tostring(prof1) .. ", " .. tostring(prof2)
+        .. ", fish=" .. tostring(fishing) .. ", cook=" .. tostring(cooking))
+
+    local profIndices = {}
+    if prof1 then profIndices[#profIndices + 1] = prof1 end
+    if prof2 then profIndices[#profIndices + 1] = prof2 end
+    if cooking then profIndices[#profIndices + 1] = cooking end
+
+    for _, idx in ipairs(profIndices) do
+        local name, icon, skillLevel, maxSkillLevel, numAbilities,
+              spellOffset, skillLineID = GetProfessionInfo(idx)
+        P("  Prof[" .. idx .. "]: name=" .. tostring(name)
+            .. " skillLineID=" .. tostring(skillLineID)
+            .. " skill=" .. tostring(skillLevel) .. "/" .. tostring(maxSkillLevel))
+    end
+
+    -- All trade skill lines
+    if C_TradeSkillUI.GetAllProfTradeSkillLines then
+        local allLines = C_TradeSkillUI.GetAllProfTradeSkillLines()
+        if allLines then
+            P("GetAllProfTradeSkillLines: " .. #allLines .. " lines")
+            for _, lineID in ipairs(allLines) do
+                if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
+                    local ok, info = pcall(
+                        C_TradeSkillUI.GetProfessionInfoBySkillLineID, lineID)
+                    if ok and info then
+                        P("  Line " .. lineID
+                            .. ": parent=" .. tostring(info.parentProfessionID)
+                            .. " profID=" .. tostring(info.professionID)
+                            .. " name=" .. tostring(info.professionName)
+                            .. " exp=" .. tostring(info.expansionName)
+                            .. " skill=" .. tostring(info.skillLevel)
+                            .. "/" .. tostring(info.maxSkillLevel))
+                    else
+                        P("  Line " .. lineID .. ": (no info)")
+                    end
+                end
+            end
+        else
+            P("GetAllProfTradeSkillLines: returned nil")
+        end
+    else
+        P("GetAllProfTradeSkillLines: API not available")
+    end
+
+    -- Cached tiers
+    P("Cached professions:")
+    for profID, data in pairs(professionCache) do
+        local tierCount = 0
+        for _ in pairs(data.tiers or {}) do tierCount = tierCount + 1 end
+        local recipeCount = 0
+        for _ in pairs(data.recipes or {}) do recipeCount = recipeCount + 1 end
+        P("  [" .. profID .. "] " .. tostring(data.name)
+            .. ": " .. tierCount .. " tiers, " .. recipeCount .. " recipes")
+        for tierID, tier in pairs(data.tiers or {}) do
+            P("    Tier[" .. tierID .. "]: " .. tostring(tier.name)
+                .. " skill=" .. tostring(tier.skillLevel)
+                .. "/" .. tostring(tier.maxSkill))
+        end
+    end
+
+    P("--- End Debug ---")
 end

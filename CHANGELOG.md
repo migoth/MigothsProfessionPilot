@@ -5,6 +5,34 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.2] - 2026-04-17
+
+### Fixed
+- **Expansion tier detection rewritten from scratch**: Complete redesign using
+  a group-by-parent approach instead of per-line matching. The new algorithm:
+  1. Collects ALL trade skill lines and their `ProfessionInfo`
+  2. Groups them by `parentProfessionID`
+  3. Matches each group to our profession using 4 fallback strategies:
+     - A) `parentProfessionID` matches our `profID` directly
+     - B) Enum resolution via `GetProfessionInfoBySkillLineID(profID)`
+     - C) Our `profID` appears as a child line in the group
+     - D) Case-insensitive substring name matching (professionName/expansionName)
+  4. All children in the matched group become tiers
+  This approach is far more robust since it doesn't depend on any single
+  API field being correct.
+- **Tier display names**: Now uses `expansionName` first (e.g. "Classic Alchemy",
+  "Midnight Alchemy") instead of the base `professionName` which was the same
+  for all tiers.
+- `ScanTiersFromOpenWindow` now delegates to the same robust implementation
+  instead of having its own (outdated) matching logic.
+
+### Added
+- `/pp debug` command prints detailed API diagnostics to chat:
+  - Character professions from `GetProfessions()`
+  - All trade skill lines with parentProfessionID, professionID, names
+  - Cached profession data with tier count and recipe count
+  Use this to diagnose tier detection issues.
+
 ## [0.7.1] - 2026-04-17
 
 ### Fixed

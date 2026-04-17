@@ -120,6 +120,9 @@ SlashCmdList["MIGOTHSPROFESSIONPILOT"] = function(msg)
         PP.Utils.Print(L["SLASH_HELP_LIST"])
         PP.Utils.Print(L["SLASH_HELP_RESET"])
         PP.Utils.Print(L["SLASH_HELP_HELP"])
+        PP.Utils.Print("  /pp debug - Print profession API diagnostics")
+    elseif msg == "debug" then
+        PP.ProfessionScanner:PrintDebugInfo()
     else
         PP.Utils.Print(L["SLASH_HELP"])
     end
