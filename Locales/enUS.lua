@@ -93,11 +93,18 @@ L["AH_PRICES_OUTDATED"] = "Price data is %s old. Visit the AH to update."
 L["PRICE_UNKNOWN"] = "Price unknown"
 
 -- Shopping List
+L["SHOP_TITLE"] = "Shopping List"
 L["SHOPPING_LIST"] = "Shopping List"
 L["SHOPPING_LIST_EMPTY"] = "No materials needed."
 L["SHOPPING_LIST_TOTAL"] = "Total Cost: %s"
 L["SHOPPING_LIST_GENERATE"] = "Generate Shopping List"
 L["SHOPPING_LIST_COPY"] = "Copy to Chat"
+L["COL_MATERIAL"] = "Material"
+L["COL_NEED"] = "Need"
+L["COL_HAVE"] = "Have"
+L["COL_BUY"] = "Buy"
+L["COL_PRICE"] = "Price"
+L["COL_TOTAL"] = "Total"
 
 -- UI
 L["MAIN_TITLE"] = "MigothsProfessionPilot"

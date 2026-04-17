@@ -92,11 +92,18 @@ PP:RegisterLocale("deDE", {
     ["PRICE_UNKNOWN"] = "Preis unbekannt",
 
     -- Shopping List
+    ["SHOP_TITLE"] = "Einkaufsliste",
     ["SHOPPING_LIST"] = "Einkaufsliste",
     ["SHOPPING_LIST_EMPTY"] = "Keine Materialien benoetigt.",
     ["SHOPPING_LIST_TOTAL"] = "Gesamtkosten: %s",
     ["SHOPPING_LIST_GENERATE"] = "Einkaufsliste erstellen",
     ["SHOPPING_LIST_COPY"] = "In Chat kopieren",
+    ["COL_MATERIAL"] = "Material",
+    ["COL_NEED"] = "Bedarf",
+    ["COL_HAVE"] = "Vorhanden",
+    ["COL_BUY"] = "Kaufen",
+    ["COL_PRICE"] = "Preis",
+    ["COL_TOTAL"] = "Gesamt",
 
     -- UI
     ["MAIN_TITLE"] = "MigothsProfessionPilot",
