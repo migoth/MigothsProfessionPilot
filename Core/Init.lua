@@ -64,9 +64,13 @@ local function OnAddonLoaded(self, event, addonName)
         PP.AuctionHouseTab:OnAuctionHouseClosed()
     end)
 
-    -- Rescan professions when trade skill window updates
+    -- Rescan professions when trade skill window updates, then refresh UI
     PP:RegisterEvent("TRADE_SKILL_LIST_UPDATE", function(self)
         PP.ProfessionScanner:ScanCurrentProfession()
+        C_Timer.After(0.2, function()
+            PP.MainFrame:Refresh()
+            if PP.AuctionHouseTab then PP.AuctionHouseTab:Refresh() end
+        end)
     end)
 
     -- Re-detect professions when skill lines change (e.g. learning a new profession)

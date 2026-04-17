@@ -43,7 +43,7 @@ function PP.ProfessionListUI:Create(parent)
     filterBtn.label:SetText(L["FILTER_INCOMPLETE"])
     filterBtn.label:SetTextColor(T.C(T.palette.textSecondary))
 
-    panel.filterIncomplete = false
+    panel.filterIncomplete = true
 
     local function UpdateFilterVisual()
         if panel.filterIncomplete then

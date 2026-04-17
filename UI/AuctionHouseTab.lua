@@ -272,6 +272,15 @@ end
 -- Scan info
 ------------------------------------------------------------------------
 
+--- Refreshes the active embedded panel (called when profession data changes).
+function PP.AuctionHouseTab:Refresh()
+    if not ahPanel or not ahPanel:IsShown() then return end
+    self:UpdateScanInfo()
+    local tab = ahPanel.activeTab or "professions"
+    local panel = ahPanel.panels and ahPanel.panels[tab]
+    if panel and panel.Refresh then panel:Refresh() end
+end
+
 --- Updates the scan timestamp in the header.
 function PP.AuctionHouseTab:UpdateScanInfo()
     if not ahPanel or not ahPanel.scanInfo then return end

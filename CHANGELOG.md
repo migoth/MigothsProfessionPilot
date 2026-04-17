@@ -5,6 +5,21 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] - 2026-04-17
+
+### Changed
+- **Incomplete filter on by default**: The profession list now shows only incomplete (non-maxed) tiers by default. Can be toggled off.
+- **Sellback disabled by default**: Cost calculations now show pure material cost only. The "Include Sellback" setting is still available in Settings if needed.
+
+### Fixed
+- **UI not refreshing after opening profession window**: MigothsProfessionPilot now automatically refreshes the profession list and all visible panels when the profession window updates (TRADE_SKILL_LIST_UPDATE). Opening the profession window to scan expansion tiers now immediately reflects in the addon.
+- **Format string bug**: Fixed "Kosten: %s 12g 34s" in tooltips — the `%s` placeholder was displayed literally instead of being replaced by the formatted value. All tooltip cost lines now use `string.format` correctly.
+
+### Added
+- **Click recipe to open crafting window**: Clicking a recipe row in the Leveling Path now opens the WoW profession window with that recipe selected via `C_TradeSkillUI.OpenRecipe`.
+- **Shift-click to search AH**: Shift-left-clicking a recipe row in the Leveling Path inserts the crafted item link into the AH search bar (or chat). Shift-left-clicking a material row in the Shopping List does the same for that material. Uses standard `HandleModifiedItemClick` behavior.
+- AuctionHouseTab now has a `Refresh()` method for external UI refresh triggers.
+
 ## [0.6.0] - 2026-04-17
 
 ### Changed

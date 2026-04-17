@@ -189,6 +189,19 @@ function PP.LevelingPathUI:CreateStepRow(parent, yOffset, step, index)
         GameTooltip:Hide()
     end)
 
+    -- Click: open crafting window for this recipe
+    -- Shift-click: insert crafted item link into AH search / chat
+    row:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" then
+            if IsShiftKeyDown() and step.outputItemID then
+                local _, itemLink = GetItemInfo(step.outputItemID)
+                if itemLink then HandleModifiedItemClick(itemLink) end
+            elseif step.recipeID and C_TradeSkillUI.OpenRecipe then
+                C_TradeSkillUI.OpenRecipe(step.recipeID)
+            end
+        end
+    end)
+
     return yOffset + ROW_HEIGHT + 1
 end
 
@@ -210,20 +223,22 @@ function PP.LevelingPathUI:ShowStepTooltip(anchor, step)
 
     GameTooltip:AddLine(" ")
 
-    -- Cost breakdown
-    GameTooltip:AddDoubleLine(L["PATH_COST"], PP.Utils.FormatMoney(step.materialCost), 1, 1, 1)
-    if step.sellback > 0 then
-        GameTooltip:AddDoubleLine(L["PATH_SELLBACK"],
-            PP.COLORS.PROFIT .. PP.Utils.FormatMoney(step.sellback) .. "|r", 1, 1, 1)
+    -- Cost breakdown (using string.format so %s placeholders are filled)
+    GameTooltip:AddLine(string.format(L["PATH_COST"],
+        PP.Utils.FormatMoney(step.materialCost)), 1, 1, 1)
+    if step.sellback and step.sellback > 0 then
+        GameTooltip:AddLine(string.format(L["PATH_SELLBACK"],
+            PP.COLORS.PROFIT .. PP.Utils.FormatMoney(step.sellback) .. "|r"), 1, 1, 1)
+        if step.netCost < 0 then
+            GameTooltip:AddLine(string.format(L["PATH_NET_COST"],
+                PP.COLORS.PROFIT .. "+" .. PP.Utils.FormatMoney(math.abs(step.netCost)) .. "|r"), 1, 1, 1)
+        else
+            GameTooltip:AddLine(string.format(L["PATH_NET_COST"],
+                PP.Utils.FormatMoney(step.netCost)), 1, 1, 1)
+        end
     end
-    if step.netCost < 0 then
-        GameTooltip:AddDoubleLine(L["PATH_NET_COST"],
-            PP.COLORS.PROFIT .. "+" .. PP.Utils.FormatMoney(math.abs(step.netCost)) .. "|r", 1, 1, 1)
-    else
-        GameTooltip:AddDoubleLine(L["PATH_NET_COST"], PP.Utils.FormatMoney(step.netCost), 1, 1, 1)
-    end
-    GameTooltip:AddDoubleLine(L["PATH_COST_PER_POINT"],
-        PP.Utils.FormatMoney(math.abs(step.costPerPoint)), 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(string.format(L["PATH_COST_PER_POINT"],
+        PP.Utils.FormatMoney(math.abs(step.costPerPoint))), 0.7, 0.7, 0.7)
 
     GameTooltip:AddLine(" ")
 

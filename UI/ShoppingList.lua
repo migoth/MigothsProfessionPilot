@@ -202,6 +202,14 @@ function PP.ShoppingListUI:CreateMaterialRow(parent, yOffset, mat, index)
         GameTooltip:Hide()
     end)
 
+    -- Shift-click: insert material item link into AH search / chat
+    row:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" and IsShiftKeyDown() then
+            local _, itemLink = GetItemInfo(mat.itemID)
+            if itemLink then HandleModifiedItemClick(itemLink) end
+        end
+    end)
+
     -- ── Material name ───────────────────────────────────────────────
     local nameFs = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     nameFs:SetPoint("LEFT", COL_NAME_X, 0)

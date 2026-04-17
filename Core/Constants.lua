@@ -3,7 +3,7 @@
 
 local ADDON_NAME, PP = ...
 
-PP.VERSION = "0.6.0"
+PP.VERSION = "0.6.1"
 
 -- Auction house cut (5%)
 PP.AH_CUT = 0.05
@@ -20,7 +20,7 @@ PP.DEFAULTS = {
     global = {
         prices = {},            -- AH price cache: itemID -> {minBuyout, lastScan}
         settings = {
-            includeSellback = true,    -- Offset costs by crafted item sell value
+            includeSellback = false,   -- Offset costs by crafted item sell value
             useInventory = true,       -- Subtract owned materials from costs
             autoScan = true,           -- Auto-scan when AH opens
             minimapButton = {
