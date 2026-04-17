@@ -5,15 +5,15 @@ local ADDON_NAME, PP = ...
 
 PP:RegisterLocale("deDE", {
     -- General
-    ["ADDON_LOADED"] = "Migoth's Profession Pilot v%s geladen. Tippe /mpp fuer Hilfe.",
-    ["SLASH_HELP"] = "Verfuegbare Befehle:",
+    ["ADDON_LOADED"] = "Migoth's Profession Pilot v%s geladen. Tippe /mpp für Hilfe.",
+    ["SLASH_HELP"] = "Verfügbare Befehle:",
     ["SLASH_HELP_TOGGLE"] = "/mpp - Hauptfenster umschalten",
     ["SLASH_HELP_SCAN"] = "/mpp scan - AH-Preisscan starten",
     ["SLASH_HELP_LIST"] = "/mpp list - Einkaufsliste anzeigen",
-    ["SLASH_HELP_RESET"] = "/mpp reset - Alle gespeicherten Daten zuruecksetzen",
+    ["SLASH_HELP_RESET"] = "/mpp reset - Alle gespeicherten Daten zurücksetzen",
     ["SLASH_HELP_HELP"] = "/mpp help - Diese Hilfe anzeigen",
-    ["RESET_CONFIRM"] = "Alle Daten wurden zurueckgesetzt.",
-    ["RESET_PROMPT"] = "Tippe '/mpp reset confirm' um alle Daten zurueckzusetzen.",
+    ["RESET_CONFIRM"] = "Alle Daten wurden zurückgesetzt.",
+    ["RESET_PROMPT"] = "Tippe '/mpp reset confirm' um alle Daten zurückzusetzen.",
 
     -- Professions
     ["PROF_ALCHEMY"] = "Alchemie",
@@ -27,14 +27,14 @@ PP:RegisterLocale("deDE", {
     ["PROF_COOKING"] = "Kochen",
     ["PROF_FISHING"] = "Angeln",
     ["PROF_FIRST_AID"] = "Erste Hilfe",
-    ["PROF_HERBALISM"] = "Kraeuterkunde",
+    ["PROF_HERBALISM"] = "Kräuterkunde",
     ["PROF_MINING"] = "Bergbau",
-    ["PROF_SKINNING"] = "Kuerschnerei",
+    ["PROF_SKINNING"] = "Kürschnerei",
 
     -- Expansions
     ["XPAC_CLASSIC"] = "Klassisch",
     ["XPAC_TBC"] = "Brennender Kreuzzug",
-    ["XPAC_WOTLK"] = "Zorn des Lichkoenigs",
+    ["XPAC_WOTLK"] = "Zorn des Lichkönigs",
     ["XPAC_CATA"] = "Kataklysmus",
     ["XPAC_MOP"] = "Nebel von Pandaria",
     ["XPAC_WOD"] = "Warlords of Draenor",
@@ -60,9 +60,9 @@ PP:RegisterLocale("deDE", {
 
     -- Path optimizer
     ["PATH_TITLE"] = "Leveling-Pfad",
-    ["PATH_EMPTY"] = "Noch kein Leveling-Pfad berechnet. Waehle eine Berufsstufe und klicke 'Pfad berechnen'.",
+    ["PATH_EMPTY"] = "Noch kein Leveling-Pfad berechnet. Wähle eine Berufsstufe und klicke 'Pfad berechnen'.",
     ["PROF_EMPTY"] = "Keine Berufe erkannt. Logge dich ein und warte einen Moment.",
-    ["PROF_HINT_RECIPES"] = "Oeffne das Berufsfenster einmal, um Rezepte fuer die Pfadberechnung zu scannen.",
+    ["PROF_HINT_RECIPES"] = "Öffne das Berufsfenster einmal, um Rezepte für die Pfadberechnung zu scannen.",
     ["PATH_STEP"] = "Schritt %d",
     ["PATH_CRAFT"] = "Stelle %dx %s her",
     ["PATH_COST"] = "Kosten: %s",
@@ -76,14 +76,14 @@ PP:RegisterLocale("deDE", {
     ["PATH_CHANCE"] = "~%.0f%% Chance pro Herstellung",
     ["PATH_CHANCE_RANGE"] = "%s~%.0f%%|r -> %s~%.0f%%|r Chance pro Herstellung",
     ["PATH_CALCULATING"] = "Berechne optimalen Pfad...",
-    ["PATH_NO_RECIPES"] = "Keine Rezepte fuer Fertigkeitspunkte auf dieser Stufe verfuegbar.",
+    ["PATH_NO_RECIPES"] = "Keine Rezepte für Fertigkeitspunkte auf dieser Stufe verfügbar.",
     ["PATH_NEED_RECIPES"] = "Rezepte noch nicht gescannt",
-    ["PATH_NO_RECIPES_HINT"] = "Alle bekannten Rezepte sind moeglicherweise trivial (grau) auf dieser Stufe, oder es fehlen AH-Preisdaten.",
+    ["PATH_NO_RECIPES_HINT"] = "Alle bekannten Rezepte sind möglicherweise trivial (grau) auf dieser Stufe, oder es fehlen AH-Preisdaten.",
     ["PATH_HAVE_MATERIALS"] = "Materialien vorhanden",
     ["PATH_NEED_MATERIALS"] = "Muss gekauft werden",
-    ["PATH_INCOMPLETE"] = "Pfad erreicht Fertigkeit %d von %d. Noch nicht alle Rezepte verfuegbar.",
-    ["PATH_INCOMPLETE_HINT"] = "Lerne weitere Rezepte auf hoeheren Fertigkeitsstufen und berechne den Pfad erneut. Oeffne das Berufsfenster zum erneuten Scannen.",
-    ["PROF_HINT_OPEN_TIERS"] = "Oeffne das Berufsfenster, um alle Erweiterungsstufen zu sehen.",
+    ["PATH_INCOMPLETE"] = "Pfad erreicht Fertigkeit %d von %d. Noch nicht alle Rezepte verfügbar.",
+    ["PATH_INCOMPLETE_HINT"] = "Lerne weitere Rezepte auf höheren Fertigkeitsstufen und berechne den Pfad erneut. Öffne das Berufsfenster zum erneuten Scannen.",
+    ["PROF_HINT_OPEN_TIERS"] = "Öffne das Berufsfenster, um alle Erweiterungsstufen zu sehen.",
 
     -- Inventory
     ["INV_IN_BAGS"] = "In Taschen: %d",
@@ -95,7 +95,7 @@ PP:RegisterLocale("deDE", {
     -- AH / Prices
     ["AH_SCAN_START"] = "Auktionshaus-Scan wird gestartet...",
     ["AH_SCAN_COMPLETE"] = "Scan abgeschlossen. %d Artikel in %.1f Sekunden aktualisiert.",
-    ["AH_SCAN_FAILED"] = "Scan fehlgeschlagen. Stelle sicher, dass das Auktionshaus geoeffnet ist.",
+    ["AH_SCAN_FAILED"] = "Scan fehlgeschlagen. Stelle sicher, dass das Auktionshaus geöffnet ist.",
     ["AH_NOT_OPEN"] = "Du musst am Auktionshaus sein, um Preise zu scannen.",
     ["AH_PRICES_OUTDATED"] = "Preisdaten sind %s alt. Besuche das AH zum Aktualisieren.",
     ["PRICE_UNKNOWN"] = "Preis unbekannt",
@@ -103,7 +103,7 @@ PP:RegisterLocale("deDE", {
     -- Shopping List
     ["SHOP_TITLE"] = "Einkaufsliste",
     ["SHOPPING_LIST"] = "Einkaufsliste",
-    ["SHOPPING_LIST_EMPTY"] = "Keine Materialien benoetigt.",
+    ["SHOPPING_LIST_EMPTY"] = "Keine Materialien benötigt.",
     ["SHOPPING_LIST_TOTAL"] = "Gesamtkosten: %s",
     ["SHOPPING_LIST_GENERATE"] = "Einkaufsliste erstellen",
     ["SHOPPING_LIST_COPY"] = "In Chat kopieren",
@@ -117,7 +117,7 @@ PP:RegisterLocale("deDE", {
     -- UI
     ["MAIN_TITLE"] = "Migoth's Profession Pilot",
     ["AH_TAB_TITLE"] = "Migoth's Profession Pilot",
-    ["AH_BTN_TOOLTIP"] = "Klicken, um das Migoth's Profession Pilot-Panel zu oeffnen",
+    ["AH_BTN_TOOLTIP"] = "Klicken, um das Migoth's Profession Pilot-Panel zu öffnen",
     ["TAB_PROFESSIONS"] = "Berufe",
     ["TAB_PATH"] = "Leveling-Pfad",
     ["TAB_SHOPPING"] = "Einkaufsliste",
@@ -125,16 +125,16 @@ PP:RegisterLocale("deDE", {
     ["BTN_SCAN"] = "AH Scannen",
     ["BTN_CALCULATE"] = "Pfad berechnen",
     ["BTN_REFRESH"] = "Aktualisieren",
-    ["FILTER_INCOMPLETE"] = "Nur unvollstaendige",
+    ["FILTER_INCOMPLETE"] = "Nur unvollständige",
 
     -- Settings
     ["SETTINGS_TITLE"] = "Migoth's Profession Pilot Einstellungen",
     ["SETTINGS_INCLUDE_SELLBACK"] = "Verkaufswert einbeziehen",
-    ["SETTINGS_INCLUDE_SELLBACK_DESC"] = "Materialkosten durch geschaetzten AH-Verkaufswert der hergestellten Gegenstaende ausgleichen.",
+    ["SETTINGS_INCLUDE_SELLBACK_DESC"] = "Materialkosten durch geschätzten AH-Verkaufswert der hergestellten Gegenstände ausgleichen.",
     ["SETTINGS_USE_INVENTORY"] = "Inventar verwenden",
     ["SETTINGS_USE_INVENTORY_DESC"] = "Bereits vorhandene Materialien von der Kostenberechnung abziehen.",
     ["SETTINGS_AUTO_SCAN"] = "Automatischer Scan",
-    ["SETTINGS_AUTO_SCAN_DESC"] = "Preise automatisch scannen, wenn das Auktionshaus geoeffnet wird.",
+    ["SETTINGS_AUTO_SCAN_DESC"] = "Preise automatisch scannen, wenn das Auktionshaus geöffnet wird.",
 
     -- Time
     ["TIME_SECONDS"] = "%d Sekunden",
