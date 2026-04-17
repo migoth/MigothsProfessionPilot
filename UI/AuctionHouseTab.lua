@@ -207,13 +207,6 @@ function PP.AuctionHouseTab:CreateEmbeddedSettingsPanel(parent)
         function(checked) PP.Database:GetSettings().useInventory = checked end,
         yOffset)
 
-    -- Auto Scan
-    yOffset = T:CreateCheckbox(panel, L["SETTINGS_AUTO_SCAN"],
-        L["SETTINGS_AUTO_SCAN_DESC"],
-        PP.Database:GetSettings().autoScan,
-        function(checked) PP.Database:GetSettings().autoScan = checked end,
-        yOffset)
-
     panel.Refresh = function() end
     return panel
 end

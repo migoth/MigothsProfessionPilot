@@ -5,6 +5,39 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.3] - 2026-04-17
+
+### Fixed
+- **All professions showing the same guide (Cooking)**: Complete rewrite of
+  `ScanCurrentProfession` profID resolution. The function now uses 4 ordered
+  strategies to correctly map the Enum.Profession value to the skill-line-based
+  cache key:
+  1. During auto-scan, uses the exact skill line ID that was opened
+  2. Uses the enum->skillLine mapping from ScanExpansionTiers
+  3. Exact name match against existing cache entries
+  4. Falls back to the enum value itself
+  The mapping is now recorded after every successful resolution to prevent
+  future mismatches. Recipes are also cleared before re-scanning so stale
+  data from a previous incorrect scan is removed.
+- **Recipes from wrong expansion tier used in path**: Added `tierID` field to
+  each cached recipe by walking the category hierarchy
+  (`C_TradeSkillUI.GetCategoryInfo`) up to the expansion tier. `GetSkillableRecipes`
+  now filters by tier when a `categoryID` is passed, so the optimizer only uses
+  recipes that actually give skill-ups for the selected expansion.
+
+### Changed
+- **AH auto-scan removed**: The auction house is no longer scanned automatically
+  when opening the AH or logging in. Use `/pp scan` or the Scan button instead.
+  The "Auto Scan" setting checkbox has been removed from both settings panels.
+
+### Added
+- **Incomplete path warning**: When the optimizer can't build a path to max skill
+  (e.g. because you haven't learned enough recipes yet), the leveling path now
+  shows a warning explaining that more recipes are needed instead of just stopping
+  silently.
+- Debug output (`/pp debug`) now shows per-tier recipe counts and how many recipes
+  are untagged (no tier association).
+
 ## [0.7.2] - 2026-04-17
 
 ### Fixed

@@ -116,6 +116,30 @@ function PP.LevelingPathUI:RefreshPanel(panel)
         yOffset = self:CreateStepRow(scrollChild, yOffset, step, i)
     end
 
+    -- Show warning if the path doesn't reach the target skill
+    local lastStep = pathData.path[#pathData.path]
+    if lastStep and lastStep.skillTo < pathData.skillTo then
+        yOffset = yOffset + 6
+        local warnText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        warnText:SetPoint("TOPLEFT", 8, -yOffset)
+        warnText:SetPoint("RIGHT", -8, 0)
+        warnText:SetJustifyH("LEFT")
+        warnText:SetWordWrap(true)
+        warnText:SetText(PP.COLORS.INCOMPLETE
+            .. string.format(L["PATH_INCOMPLETE"],
+                lastStep.skillTo, pathData.skillTo)
+            .. "|r")
+        yOffset = yOffset + 34
+
+        local hintText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        hintText:SetPoint("TOPLEFT", 8, -yOffset)
+        hintText:SetPoint("RIGHT", -8, 0)
+        hintText:SetJustifyH("LEFT")
+        hintText:SetWordWrap(true)
+        hintText:SetText(PP.COLORS.GRAY .. L["PATH_INCOMPLETE_HINT"] .. "|r")
+        yOffset = yOffset + 30
+    end
+
     scrollChild:SetHeight(yOffset)
 end
 

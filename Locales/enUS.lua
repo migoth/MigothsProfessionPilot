@@ -82,6 +82,8 @@ L["PATH_NEED_RECIPES"] = "Recipes not yet scanned"
 L["PATH_NO_RECIPES_HINT"] = "All known recipes may be trivial (gray) at this skill level, or no AH price data is available."
 L["PATH_HAVE_MATERIALS"] = "Have materials"
 L["PATH_NEED_MATERIALS"] = "Need to buy"
+L["PATH_INCOMPLETE"] = "Path reaches skill %d of %d. Not all recipes are available yet."
+L["PATH_INCOMPLETE_HINT"] = "Learn more recipes at higher skill levels, then recalculate. Open the profession window to rescan."
 L["PROF_HINT_OPEN_TIERS"] = "Open the profession window to see all expansion tiers."
 
 -- Inventory

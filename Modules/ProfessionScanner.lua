@@ -25,6 +25,10 @@ local enumToSkillLine = {}
 local autoScanQueue = {}
 local isAutoScanning = false
 
+-- The skill line ID we intentionally opened during auto-scan.
+-- Used by ScanCurrentProfession to resolve the correct cache key.
+local expectedSkillLineID = nil
+
 --- Initializes the profession scanner.
 -- Restores cached data from SavedVariables and schedules a proactive scan.
 function PP.ProfessionScanner:Init()
@@ -374,6 +378,7 @@ function PP.ProfessionScanner:ProcessAutoScanQueue()
     end
 
     local skillLineID = table.remove(autoScanQueue, 1)
+    expectedSkillLineID = skillLineID
 
     -- Open the profession to trigger data loading.
     -- TRADE_SKILL_LIST_UPDATE will fire and our existing handler calls
@@ -391,6 +396,7 @@ function PP.ProfessionScanner:ProcessAutoScanQueue()
 
     -- Wait for the scan to complete, then close and continue
     C_Timer.After(1.5, function()
+        expectedSkillLineID = nil
         if C_TradeSkillUI and C_TradeSkillUI.CloseTradeSkill then
             C_TradeSkillUI.CloseTradeSkill()
         end
@@ -415,26 +421,47 @@ function PP.ProfessionScanner:ScanCurrentProfession()
     local profInfo = C_TradeSkillUI.GetBaseProfessionInfo()
     if not profInfo or not profInfo.professionID then return end
 
-    local profID = profInfo.professionID
+    local enumID = profInfo.professionID  -- Enum.Profession value (small int)
 
-    -- GetBaseProfessionInfo().professionID might be an Enum.Profession value
-    -- instead of a skill line ID. If we have a mapping from a previous scan,
-    -- use the skill line ID as cache key for consistency.
-    if enumToSkillLine[profID] then
-        profID = enumToSkillLine[profID]
+    -- Resolve to the correct skill-line-based cache key using multiple
+    -- strategies, in order of reliability:
+    local profID = nil
+
+    -- Strategy 1: During auto-scan we know exactly which skillLineID was opened
+    if expectedSkillLineID and professionCache[expectedSkillLineID] then
+        profID = expectedSkillLineID
     end
 
-    -- If profID still doesn't match an existing cache entry, try to
-    -- find the right one by profession name.
-    if not professionCache[profID] then
-        for existingID, data in pairs(professionCache) do
-            if data.name == (profInfo.professionName or "") then
-                profID = existingID
-                break
+    -- Strategy 2: Use the enum->skillLine mapping from ScanExpansionTiers
+    if not profID and enumToSkillLine[enumID] then
+        profID = enumToSkillLine[enumID]
+    end
+
+    -- Strategy 3: Exact name match against existing cache entries
+    if not profID then
+        local profName = profInfo.professionName or ""
+        if profName ~= "" then
+            for existingID, data in pairs(professionCache) do
+                if data.name == profName then
+                    profID = existingID
+                    break
+                end
             end
         end
     end
 
+    -- Strategy 4: The enum value itself (unlikely to match a cache key
+    -- but keeps the old behaviour as last resort)
+    if not profID then
+        profID = enumID
+    end
+
+    -- Record the mapping for future calls so we never resolve wrong again
+    if profID ~= enumID then
+        enumToSkillLine[enumID] = profID
+    end
+
+    -- Create cache entry if needed
     if not professionCache[profID] then
         professionCache[profID] = {
             name = profInfo.professionName or "Unknown",
@@ -453,9 +480,11 @@ function PP.ProfessionScanner:ScanCurrentProfession()
     -- Also try reading tiers from the TradeSkill tab info (while window is open)
     self:ScanTiersFromOpenWindow(profID)
 
-    -- Scan all recipes
+    -- Scan all recipes.  Clear the old set first so stale recipes from
+    -- a previous (possibly incorrect) scan are removed.
     local recipeIDs = C_TradeSkillUI.GetAllRecipeIDs()
-    if recipeIDs then
+    if recipeIDs and #recipeIDs > 0 then
+        cache.recipes = {}
         for _, recipeID in ipairs(recipeIDs) do
             self:CacheRecipe(profID, recipeID)
         end
@@ -478,6 +507,37 @@ end
 ------------------------------------------------------------------------
 -- Recipe caching
 ------------------------------------------------------------------------
+
+--- Walks up the recipe category hierarchy to find the expansion tier.
+-- Returns the tier ID (skill line ID) if the category chain leads to a
+-- known tier, or nil if we can't determine it.
+-- @param profID number The profession cache key
+-- @param categoryID number The recipe's immediate category
+-- @return number|nil tierID
+local function FindRecipeTier(profID, categoryID)
+    local cache = professionCache[profID]
+    if not cache or not cache.tiers or not categoryID then return nil end
+
+    -- C_TradeSkillUI.GetCategoryInfo might not be available
+    if not C_TradeSkillUI.GetCategoryInfo then return nil end
+
+    local catID = categoryID
+    local visited = {}
+    while catID and not visited[catID] do
+        visited[catID] = true
+        -- Is this category itself a tier?
+        if cache.tiers[catID] then return catID end
+        -- Walk up
+        local ok, catInfo = pcall(C_TradeSkillUI.GetCategoryInfo, catID)
+        if ok and catInfo and catInfo.parentCategoryID
+           and catInfo.parentCategoryID ~= 0 then
+            catID = catInfo.parentCategoryID
+        else
+            break
+        end
+    end
+    return nil
+end
 
 --- Caches detailed data for a single recipe including difficulty and reagents.
 -- @param profID number The profession ID
@@ -505,12 +565,16 @@ function PP.ProfessionScanner:CacheRecipe(profID, recipeID)
     local difficulty = recipeInfo.relativeDifficulty or 3  -- Default to trivial
     local skillUpChance = PP.Utils.GetSkillUpChance(difficulty)
 
+    -- Determine which expansion tier this recipe belongs to
+    local tierID = FindRecipeTier(profID, recipeInfo.categoryID)
+
     -- Build recipe entry
     local recipe = {
         recipeID = recipeID,
         name = recipeInfo.name or schematic.name or "Unknown",
         icon = recipeInfo.icon or schematic.icon,
         categoryID = recipeInfo.categoryID,
+        tierID = tierID,
         difficulty = difficulty,
         skillUpChance = skillUpChance,
         numSkillUps = recipeInfo.numSkillUps or 1,
@@ -527,11 +591,6 @@ function PP.ProfessionScanner:CacheRecipe(profID, recipeID)
     local cache = professionCache[profID]
     if cache then
         cache.recipes[recipeID] = recipe
-
-        -- Also assign to the matching tier/category
-        if recipe.categoryID and cache.tiers[recipe.categoryID] then
-            cache.tiers[recipe.categoryID].recipes[recipeID] = recipe
-        end
     end
 end
 
@@ -606,11 +665,10 @@ function PP.ProfessionScanner:GetRecipe(recipeID)
 end
 
 --- Returns all recipes that can give skill-ups at the given skill level.
--- Excludes trivial (gray) recipes.
+-- Excludes trivial (gray) recipes.  When a categoryID (expansion tier) is
+-- given, only recipes belonging to that tier are returned.
 -- @param profID number The profession ID
--- @param categoryID number|nil Optional tier/category filter (unused - recipes
---   always come from the global cache because recipe categoryIDs are
---   sub-categories, not expansion skill line IDs)
+-- @param categoryID number|nil Expansion tier ID to filter by
 -- @return table Array of recipe data tables sorted by difficulty (orange first)
 function PP.ProfessionScanner:GetSkillableRecipes(profID, categoryID)
     local cache = professionCache[profID]
@@ -618,14 +676,18 @@ function PP.ProfessionScanner:GetSkillableRecipes(profID, categoryID)
 
     local results = {}
 
-    -- Always iterate the global recipe cache.  Tier-specific recipe
-    -- lists are unreliable because recipe.categoryID (a sub-category
-    -- like "Armor") does not match the tier's key (an expansion skill
-    -- line ID).  Recipes that are trivial for the selected tier already
-    -- have skillUpChance == 0 and are filtered out below.
     for recipeID, recipe in pairs(cache.recipes) do
         if not recipe.disabled and recipe.skillUpChance > 0 then
-            table.insert(results, recipe)
+            -- If a tier filter is requested and the recipe has a known tier,
+            -- only include recipes from that specific expansion tier.
+            local matchesTier = true
+            if categoryID and recipe.tierID then
+                matchesTier = (recipe.tierID == categoryID)
+            end
+
+            if matchesTier then
+                table.insert(results, recipe)
+            end
         end
     end
 
@@ -722,9 +784,21 @@ function PP.ProfessionScanner:PrintDebugInfo()
         P("  [" .. profID .. "] " .. tostring(data.name)
             .. ": " .. tierCount .. " tiers, " .. recipeCount .. " recipes")
         for tierID, tier in pairs(data.tiers or {}) do
+            -- Count recipes that belong to this tier
+            local tierRecipes = 0
+            local untagged = 0
+            for _, recipe in pairs(data.recipes or {}) do
+                if recipe.tierID == tierID then
+                    tierRecipes = tierRecipes + 1
+                elseif not recipe.tierID then
+                    untagged = untagged + 1
+                end
+            end
             P("    Tier[" .. tierID .. "]: " .. tostring(tier.name)
                 .. " skill=" .. tostring(tier.skillLevel)
-                .. "/" .. tostring(tier.maxSkill))
+                .. "/" .. tostring(tier.maxSkill)
+                .. " recipes=" .. tierRecipes
+                .. " untagged=" .. untagged)
         end
     end
 

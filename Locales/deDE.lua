@@ -81,6 +81,8 @@ PP:RegisterLocale("deDE", {
     ["PATH_NO_RECIPES_HINT"] = "Alle bekannten Rezepte sind moeglicherweise trivial (grau) auf dieser Stufe, oder es fehlen AH-Preisdaten.",
     ["PATH_HAVE_MATERIALS"] = "Materialien vorhanden",
     ["PATH_NEED_MATERIALS"] = "Muss gekauft werden",
+    ["PATH_INCOMPLETE"] = "Pfad erreicht Fertigkeit %d von %d. Noch nicht alle Rezepte verfuegbar.",
+    ["PATH_INCOMPLETE_HINT"] = "Lerne weitere Rezepte auf hoeheren Fertigkeitsstufen und berechne den Pfad erneut. Oeffne das Berufsfenster zum erneuten Scannen.",
     ["PROF_HINT_OPEN_TIERS"] = "Oeffne das Berufsfenster, um alle Erweiterungsstufen zu sehen.",
 
     -- Inventory

@@ -46,14 +46,8 @@ local function OnAddonLoaded(self, event, addonName)
     PP.MainFrame:Init()
     PP.AuctionHouseTab:Init()
 
-    -- Auto-scan AH prices when AH opens
+    -- Inject AH tab when AH opens (no auto-scan; use /pp scan or the Scan button)
     PP:RegisterEvent("AUCTION_HOUSE_SHOW", function(self)
-        if PP.Database:GetSettings().autoScan then
-            C_Timer.After(0.5, function()
-                PP.PriceSource:StartScan()
-            end)
-        end
-        -- Inject AH tab
         C_Timer.After(0, function()
             PP.AuctionHouseTab:OnAuctionHouseShow()
         end)
