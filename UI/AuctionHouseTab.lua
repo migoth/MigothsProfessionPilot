@@ -1,5 +1,5 @@
 -- AuctionHouseTab.lua
--- Adds a Blizzard-style icon tab at the bottom of the Auction House frame
+-- Adds a small icon button on the right edge of the Auction House frame
 -- that opens MigothsProfessionPilot in a floating panel beside the AH.
 
 local ADDON_NAME, PP = ...
@@ -46,53 +46,49 @@ function PP.AuctionHouseTab:OnAuctionHouseClosed()
 end
 
 ------------------------------------------------------------------------
--- Blizzard-style bottom tab (icon only, with tooltip)
+-- Right-side icon button on the AH frame
 ------------------------------------------------------------------------
 
---- Creates a Blizzard-style tab at the bottom of the AH frame.
+--- Creates a small icon button on the right edge of the AH frame.
+-- Positions below MCP's button if both addons are loaded.
 function PP.AuctionHouseTab:CreateButton()
     local L = PP.L
 
-    -- Find last existing tab (Blizzard tabs, or MCP tab if both addons loaded)
-    local lastTab
-    for i = 20, 1, -1 do
-        local tab = _G["AuctionHouseFrameTab" .. i]
-        if tab then
-            lastTab = tab
-            break
-        end
-    end
-    local mcpTab = _G["MigothsCraftingProfitAHTab"]
-    if mcpTab then lastTab = mcpTab end
-
-    -- Create Blizzard-style bottom tab (icon only, no text label)
     ahButton = CreateFrame("Button", "MigothsProfessionPilotAHTab",
-                           AuctionHouseFrame, "PanelTabButtonTemplate")
-    ahButton:SetText(" ")
+                           AuctionHouseFrame, "BackdropTemplate")
+    ahButton:SetSize(32, 32)
 
-    if lastTab then
-        ahButton:SetPoint("LEFT", lastTab, "RIGHT", -16, 0)
+    -- Stack below MCP's button if present, otherwise top-right
+    local mcpTab = _G["MigothsCraftingProfitAHTab"]
+    if mcpTab then
+        ahButton:SetPoint("TOPLEFT", mcpTab, "BOTTOMLEFT", 0, -2)
     else
-        ahButton:SetPoint("BOTTOMLEFT", AuctionHouseFrame, "BOTTOMLEFT", 60, -31)
+        ahButton:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", 4, -4)
     end
 
-    -- Hide text, show icon only
-    local textObj = ahButton.Text or _G[ahButton:GetName() .. "Text"]
-    if textObj then textObj:SetAlpha(0) end
+    ahButton:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8x8",
+        edgeFile = "Interface\\Buttons\\WHITE8x8",
+        edgeSize = 1,
+    })
+    ahButton:SetBackdropColor(0.12, 0.12, 0.12, 0.9)
+    ahButton:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
 
     local icon = ahButton:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(18, 18)
-    icon:SetPoint("CENTER", 0, -3)
+    icon:SetSize(22, 22)
+    icon:SetPoint("CENTER")
     icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     ahButton.icon = icon
 
-    PanelTemplates_TabResize(ahButton, 10, nil, 36, 36)
-    PanelTemplates_DeselectTab(ahButton)
+    -- Highlight on hover
+    local highlight = ahButton:CreateTexture(nil, "HIGHLIGHT")
+    highlight:SetAllPoints()
+    highlight:SetColorTexture(1, 1, 1, 0.1)
 
     -- Tooltip
     ahButton:HookScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine(L["AH_TAB_TITLE"])
         GameTooltip:AddLine(L["AH_BTN_TOOLTIP"], 1, 1, 1, true)
         GameTooltip:Show()
@@ -105,7 +101,7 @@ function PP.AuctionHouseTab:CreateButton()
         PP.AuctionHouseTab:TogglePanel()
     end)
 
-    -- Deselect our tab when a Blizzard AH tab is clicked
+    -- Close our panel when a Blizzard AH tab is clicked
     for i = 1, 20 do
         local tab = _G["AuctionHouseFrameTab" .. i]
         if tab then
@@ -113,20 +109,20 @@ function PP.AuctionHouseTab:CreateButton()
                 if isShown then
                     if ahPanel then ahPanel:Hide() end
                     isShown = false
-                    PanelTemplates_DeselectTab(ahButton)
+                    UpdateTabVisual()
                 end
             end)
         end
     end
 end
 
---- Updates the tab appearance based on panel visibility.
+--- Updates the button appearance based on panel visibility.
 local function UpdateTabVisual()
     if not ahButton then return end
     if isShown then
-        PanelTemplates_SelectTab(ahButton)
+        ahButton:SetBackdropBorderColor(0.8, 0.6, 0.0, 1)
     else
-        PanelTemplates_DeselectTab(ahButton)
+        ahButton:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
     end
 end
 
@@ -146,7 +142,7 @@ function PP.AuctionHouseTab:CreatePanel()
     -- Main window via Theme helper
     ahPanel = T:CreateWindow("MigothsProfessionPilotAHPanel", PANEL_WIDTH, PANEL_HEIGHT)
     ahPanel:ClearAllPoints()
-    ahPanel:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", 4, 0)
+    ahPanel:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", 40, 0)
     ahPanel:Hide()
 
     ----------------------------------------------------------------

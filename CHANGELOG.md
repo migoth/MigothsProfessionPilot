@@ -5,6 +5,11 @@ All notable changes to MigothsProfessionPilot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.7] - 2026-04-17
+
+### Changed
+- **AH button redesign**: Replaced bottom tab with a small icon button on the right edge of the AH frame. Stacks below MCP's button if both addons are loaded. Gold border when active, tooltip on hover.
+
 ## [0.7.6] - 2026-04-17
 
 ### Fixed
